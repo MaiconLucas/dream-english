@@ -13,6 +13,23 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  async function handleDevLogin() {
+    const devEmail = process.env.NEXT_PUBLIC_DEV_EMAIL
+    const devPassword = process.env.NEXT_PUBLIC_DEV_PASSWORD
+    if (!devEmail || !devPassword) return
+    setEmail(devEmail)
+    setPassword(devPassword)
+    setLoading(true)
+    setError('')
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithPassword({ email: devEmail, password: devPassword })
+    if (error) { setError(error.message); setLoading(false); return }
+    await new Promise(resolve => setTimeout(resolve, 500))
+    router.refresh()
+    await new Promise(resolve => setTimeout(resolve, 300))
+    window.location.replace('/admin/dashboard')
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -102,6 +119,19 @@ export default function LoginPage() {
               Esqueci minha senha
             </a>
           </div>
+
+          {process.env.NEXT_PUBLIC_DEV_EMAIL && (
+            <div className="mt-4 pt-4 border-t border-[#e2e8f0]">
+              <button
+                type="button"
+                onClick={handleDevLogin}
+                disabled={loading}
+                className="w-full py-2 rounded-lg bg-[#f1f5f9] text-[#64748b] text-xs font-medium hover:bg-[#e2e8f0] transition disabled:opacity-60"
+              >
+                ⚡ Acesso rápido (dev)
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
