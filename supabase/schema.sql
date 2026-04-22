@@ -1,23 +1,33 @@
 -- ============================================================
--- DREAM ENGLISH SCHOOL — Schema completo
--- Execute no Supabase SQL Editor (em ordem)
+-- DREAM ENGLISH SCHOOL — Schema completo (idempotente)
+-- Pode ser executado múltiplas vezes sem erros
 -- ============================================================
 
 -- ============================================================
 -- 1. ENUMS
 -- ============================================================
-create type user_role as enum ('ADMIN', 'TEACHER', 'STUDENT');
-create type enrollment_status as enum ('ACTIVE', 'INACTIVE', 'SUSPENDED');
-create type payment_status as enum ('PENDING', 'PAID', 'OVERDUE', 'CANCELLED');
-create type homework_status as enum ('DRAFT', 'PUBLISHED', 'CLOSED');
-create type submission_status as enum ('PENDING', 'SUBMITTED', 'CORRECTED');
-create type attendance_status as enum ('PRESENT', 'ABSENT', 'LATE', 'JUSTIFIED');
+do $$ begin create type user_role as enum ('ADMIN', 'TEACHER', 'STUDENT');
+exception when duplicate_object then null; end $$;
+
+do $$ begin create type enrollment_status as enum ('ACTIVE', 'INACTIVE', 'SUSPENDED');
+exception when duplicate_object then null; end $$;
+
+do $$ begin create type payment_status as enum ('PENDING', 'PAID', 'OVERDUE', 'CANCELLED');
+exception when duplicate_object then null; end $$;
+
+do $$ begin create type homework_status as enum ('DRAFT', 'PUBLISHED', 'CLOSED');
+exception when duplicate_object then null; end $$;
+
+do $$ begin create type submission_status as enum ('PENDING', 'SUBMITTED', 'CORRECTED');
+exception when duplicate_object then null; end $$;
+
+do $$ begin create type attendance_status as enum ('PRESENT', 'ABSENT', 'LATE', 'JUSTIFIED');
+exception when duplicate_object then null; end $$;
 
 -- ============================================================
 -- 2. TABELAS
 -- ============================================================
-
-create table schools (
+create table if not exists schools (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   slug text not null unique,
@@ -31,7 +41,7 @@ create table schools (
   updated_at timestamptz not null default now()
 );
 
-create table profiles (
+create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   school_id uuid not null references schools(id) on delete cascade,
   role user_role not null default 'STUDENT',
@@ -44,7 +54,7 @@ create table profiles (
   updated_at timestamptz not null default now()
 );
 
-create table plans (
+create table if not exists plans (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references schools(id) on delete cascade,
   name text not null,
@@ -56,7 +66,7 @@ create table plans (
   updated_at timestamptz not null default now()
 );
 
-create table teachers (
+create table if not exists teachers (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references profiles(id) on delete cascade,
   school_id uuid not null references schools(id) on delete cascade,
@@ -66,7 +76,7 @@ create table teachers (
   updated_at timestamptz not null default now()
 );
 
-create table students (
+create table if not exists students (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references profiles(id) on delete cascade,
   school_id uuid not null references schools(id) on delete cascade,
@@ -78,7 +88,7 @@ create table students (
   updated_at timestamptz not null default now()
 );
 
-create table classes (
+create table if not exists classes (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references schools(id) on delete cascade,
   teacher_id uuid references teachers(id) on delete set null,
@@ -91,7 +101,7 @@ create table classes (
   updated_at timestamptz not null default now()
 );
 
-create table enrollments (
+create table if not exists enrollments (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references schools(id) on delete cascade,
   student_id uuid not null references students(id) on delete cascade,
@@ -103,7 +113,7 @@ create table enrollments (
   unique(student_id, class_id)
 );
 
-create table lessons (
+create table if not exists lessons (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references schools(id) on delete cascade,
   class_id uuid not null references classes(id) on delete cascade,
@@ -118,7 +128,7 @@ create table lessons (
   updated_at timestamptz not null default now()
 );
 
-create table attendance (
+create table if not exists attendance (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references schools(id) on delete cascade,
   lesson_id uuid not null references lessons(id) on delete cascade,
@@ -130,7 +140,7 @@ create table attendance (
   unique(lesson_id, student_id)
 );
 
-create table modules (
+create table if not exists modules (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references schools(id) on delete cascade,
   title text not null,
@@ -143,7 +153,7 @@ create table modules (
   updated_at timestamptz not null default now()
 );
 
-create table homework (
+create table if not exists homework (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references schools(id) on delete cascade,
   class_id uuid not null references classes(id) on delete cascade,
@@ -158,7 +168,7 @@ create table homework (
   updated_at timestamptz not null default now()
 );
 
-create table hw_submissions (
+create table if not exists hw_submissions (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references schools(id) on delete cascade,
   homework_id uuid not null references homework(id) on delete cascade,
@@ -175,7 +185,7 @@ create table hw_submissions (
   unique(homework_id, student_id)
 );
 
-create table payments (
+create table if not exists payments (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references schools(id) on delete cascade,
   student_id uuid not null references students(id) on delete cascade,
@@ -190,7 +200,7 @@ create table payments (
   updated_at timestamptz not null default now()
 );
 
-create table audit_logs (
+create table if not exists audit_logs (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references schools(id) on delete cascade,
   user_id uuid references auth.users(id) on delete set null,
@@ -206,16 +216,16 @@ create table audit_logs (
 -- ============================================================
 -- 3. ÍNDICES
 -- ============================================================
-create index on profiles(school_id);
-create index on profiles(role);
-create index on students(school_id);
-create index on teachers(school_id);
-create index on classes(school_id);
-create index on lessons(school_id, scheduled_at);
-create index on payments(school_id, status);
-create index on payments(due_date);
-create index on attendance(school_id);
-create index on hw_submissions(school_id, status);
+create index if not exists idx_profiles_school_id on profiles(school_id);
+create index if not exists idx_profiles_role on profiles(role);
+create index if not exists idx_students_school_id on students(school_id);
+create index if not exists idx_teachers_school_id on teachers(school_id);
+create index if not exists idx_classes_school_id on classes(school_id);
+create index if not exists idx_lessons_school_scheduled on lessons(school_id, scheduled_at);
+create index if not exists idx_payments_school_status on payments(school_id, status);
+create index if not exists idx_payments_due_date on payments(due_date);
+create index if not exists idx_attendance_school_id on attendance(school_id);
+create index if not exists idx_hw_submissions_school_status on hw_submissions(school_id, status);
 
 -- ============================================================
 -- 4. UPDATED_AT AUTOMÁTICO
@@ -228,19 +238,45 @@ begin
 end;
 $$;
 
-create trigger set_updated_at before update on schools for each row execute function set_updated_at();
-create trigger set_updated_at before update on profiles for each row execute function set_updated_at();
-create trigger set_updated_at before update on plans for each row execute function set_updated_at();
-create trigger set_updated_at before update on teachers for each row execute function set_updated_at();
-create trigger set_updated_at before update on students for each row execute function set_updated_at();
-create trigger set_updated_at before update on classes for each row execute function set_updated_at();
-create trigger set_updated_at before update on enrollments for each row execute function set_updated_at();
-create trigger set_updated_at before update on lessons for each row execute function set_updated_at();
-create trigger set_updated_at before update on attendance for each row execute function set_updated_at();
-create trigger set_updated_at before update on modules for each row execute function set_updated_at();
-create trigger set_updated_at before update on homework for each row execute function set_updated_at();
-create trigger set_updated_at before update on hw_submissions for each row execute function set_updated_at();
-create trigger set_updated_at before update on payments for each row execute function set_updated_at();
+do $$ begin
+  create trigger set_updated_at before update on schools for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on profiles for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on plans for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on teachers for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on students for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on classes for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on enrollments for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on lessons for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on attendance for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on modules for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on homework for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on hw_submissions for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create trigger set_updated_at before update on payments for each row execute function set_updated_at();
+exception when duplicate_object then null; end $$;
 
 -- ============================================================
 -- 5. ROW LEVEL SECURITY
@@ -260,19 +296,31 @@ alter table hw_submissions enable row level security;
 alter table payments enable row level security;
 alter table audit_logs enable row level security;
 
--- Helper: school_id do usuário autenticado
 create or replace function auth_school_id()
 returns uuid language sql stable security definer as $$
   select school_id from profiles where id = auth.uid()
 $$;
 
--- Helper: role do usuário autenticado
 create or replace function auth_role()
 returns text language sql stable security definer as $$
   select role::text from profiles where id = auth.uid()
 $$;
 
--- Policies: usuário acessa apenas dados da própria escola
+drop policy if exists "escola própria" on schools;
+drop policy if exists "escola própria" on profiles;
+drop policy if exists "escola própria" on plans;
+drop policy if exists "escola própria" on teachers;
+drop policy if exists "escola própria" on students;
+drop policy if exists "escola própria" on classes;
+drop policy if exists "escola própria" on enrollments;
+drop policy if exists "escola própria" on lessons;
+drop policy if exists "escola própria" on attendance;
+drop policy if exists "escola própria" on modules;
+drop policy if exists "escola própria" on homework;
+drop policy if exists "escola própria" on hw_submissions;
+drop policy if exists "escola própria" on payments;
+drop policy if exists "escola própria" on audit_logs;
+
 create policy "escola própria" on schools for all using (id = auth_school_id());
 create policy "escola própria" on profiles for all using (school_id = auth_school_id());
 create policy "escola própria" on plans for all using (school_id = auth_school_id());
@@ -290,33 +338,32 @@ create policy "escola própria" on audit_logs for all using (school_id = auth_sc
 
 -- ============================================================
 -- 6. SEED: escola + perfil admin
--- Substitua o UUID abaixo pelo ID do seu usuário em
--- Supabase → Authentication → Users
 -- ============================================================
 do $$
 declare
   v_school_id uuid;
   v_user_id uuid;
 begin
-  -- Busca o usuário pelo email
-  select id into v_user_id
-  from auth.users
-  where email = 'lucasmaiconj@gmail.com'
-  limit 1;
+  select id into v_user_id from auth.users
+  where email = 'lucasmaiconj@gmail.com' limit 1;
 
   if v_user_id is null then
     raise exception 'Usuário não encontrado. Faça login primeiro.';
   end if;
 
-  -- Cria a escola
+  -- Pula se perfil já existir
+  if exists (select 1 from profiles where id = v_user_id) then
+    raise notice 'Perfil já existe, seed ignorado.';
+    return;
+  end if;
+
   insert into schools (name, slug, email)
   values ('Dream English School', 'dream-english', 'lucasmaiconj@gmail.com')
   returning id into v_school_id;
 
-  -- Cria o perfil admin
   insert into profiles (id, school_id, role, full_name, email)
   values (v_user_id, v_school_id, 'ADMIN', 'Admin', 'lucasmaiconj@gmail.com');
 
-  raise notice 'Escola criada: % | Perfil admin: %', v_school_id, v_user_id;
+  raise notice 'Escola: % | Admin: %', v_school_id, v_user_id;
 end;
 $$;
