@@ -21,8 +21,6 @@ export async function middleware(request: NextRequest) {
 
   const { supabaseResponse, user, role } = await updateSession(request)
 
-  console.log(`[middleware] path=${pathname} user=${user?.email ?? 'none'} role=${role ?? 'none'}`)
-
   if (!user && !isPublic) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirectTo', pathname)
@@ -35,14 +33,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && role) {
-    const dest = REDIRECT_BY_ROLE[role] ?? '/login'
-
     if (pathname === '/') {
+      const dest = REDIRECT_BY_ROLE[role] ?? '/login'
       return NextResponse.redirect(new URL(dest, request.url))
     }
 
     const allowed = (ROLE_PREFIXES[role] ?? []).some(p => pathname.startsWith(p))
     if (!allowed && !isPublic) {
+      const dest = REDIRECT_BY_ROLE[role] ?? '/login'
       return NextResponse.redirect(new URL(dest, request.url))
     }
   }
