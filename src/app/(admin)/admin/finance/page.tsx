@@ -99,7 +99,7 @@ export default async function FinancePage() {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <DollarSign size={40} className="text-text-muted/40 mb-3" />
             <p className="text-sm text-text-muted">Nenhum pagamento registrado ainda.</p>
-            <p className="text-xs text-text-muted/60 mt-1">Clique em "Adicionar Pagamento" para começar.</p>
+            <p className="text-xs text-text-muted/60 mt-1">Clique em &quot;Adicionar Pagamento&quot; para começar.</p>
           </div>
         )}
       </div>

@@ -77,7 +77,7 @@ export default async function TeachersPage() {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <GraduationCap size={40} className="text-text-muted/40 mb-3" />
             <p className="text-sm text-text-muted">Nenhum professor cadastrado ainda.</p>
-            <p className="text-xs text-text-muted/60 mt-1">Clique em "Adicionar Professor" para começar.</p>
+            <p className="text-xs text-text-muted/60 mt-1">Clique em &quot;Adicionar Professor&quot; para começar.</p>
           </div>
         )}
       </div>
