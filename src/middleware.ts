@@ -1,25 +1,29 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
 
 const PUBLIC_ROUTES = ['/login', '/forgot-password', '/api/auth/callback']
 
-export async function middleware(request: NextRequest) {
+function hasAuthCookie(request: NextRequest): boolean {
+  return request.cookies.getAll().some(
+    ({ name }) => name.startsWith('sb-') && name.includes('-auth-token')
+  )
+}
+
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isPublic = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
+  const authenticated = hasAuthCookie(request)
 
-  const { supabaseResponse, user } = await updateSession(request)
-
-  if (!user && !isPublic) {
+  if (!authenticated && !isPublic) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  if (user && isPublic && pathname !== '/api/auth/callback') {
+  if (authenticated && isPublic && pathname !== '/api/auth/callback') {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url))
   }
 
-  return supabaseResponse
+  return NextResponse.next()
 }
 
 export const config = {
