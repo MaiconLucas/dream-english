@@ -147,11 +147,19 @@ function KPICard({ title, value, subtitle, icon, variant = 'default' }: KPICardP
   )
 }
 
+const emptyKPIs: AdminDashboardKPIs = {
+  revenue_month: 0,
+  overdue_count: 0,
+  overdue_amount: 0,
+  active_students: 0,
+  lessons_this_week: 0,
+  attendance_rate: 0,
+  pending_homework: 0,
+}
+
 export default async function AdminDashboardPage() {
   const schoolId = await getSchoolId()
-  if (!schoolId) return null
-
-  const kpis = await getKPIs(schoolId)
+  const kpis = schoolId ? await getKPIs(schoolId) : emptyKPIs
 
   return (
     <div>
