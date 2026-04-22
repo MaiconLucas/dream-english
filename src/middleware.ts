@@ -1,8 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
-export const runtime = 'nodejs'
-
 const PUBLIC_ROUTES = ['/login', '/forgot-password', '/api/auth/callback']
 
 const REDIRECT_BY_ROLE: Record<string, string> = {
