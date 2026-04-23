@@ -46,6 +46,7 @@ export default function Sidebar({ email }: { email: string }) {
 
       <div className="p-4 border-t border-[#e2e8f0]">
         <p className="text-xs text-[#64748b] truncate">{email}</p>
+        <p className="text-[10px] text-[#94a3b8] mt-1">v0.1.7</p>
       </div>
     </aside>
   )
