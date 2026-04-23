@@ -43,7 +43,7 @@ export default async function FinancePage() {
   const [{ data: payments }, { data: students }] = await Promise.all([
     supabase
       .from('payments')
-      .select('id, amount_cents, status, due_date, paid_at, reference_month, student:students(id, profile:profiles(full_name))')
+      .select('id, amount_cents, status, due_date, paid_at, reference_month, student:students!student_id(id, profile:profiles!profile_id(full_name))')
       .eq('school_id', profile.school_id)
       .order('due_date', { ascending: false }),
     supabase

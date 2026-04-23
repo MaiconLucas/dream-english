@@ -30,6 +30,7 @@ export default function Sidebar({ email }: { email: string }) {
             <Link
               key={href}
               href={href}
+              prefetch={false}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
                 active
                   ? 'bg-primary-light text-primary'

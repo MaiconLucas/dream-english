@@ -24,7 +24,7 @@ export default async function StudentsPage() {
   const [{ data: students }, { data: plans }] = await Promise.all([
     supabase
       .from('students')
-      .select('id, level, created_at, profile:profiles(full_name, email, active), plan:plans(name)')
+      .select('id, level, created_at, profile:profiles!profile_id(full_name, email, active), plan:plans!plan_id(name)')
       .eq('school_id', profile.school_id)
       .order('created_at', { ascending: false }),
     supabase

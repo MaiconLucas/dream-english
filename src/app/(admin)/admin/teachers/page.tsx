@@ -23,7 +23,7 @@ export default async function TeachersPage() {
 
   const { data: teachers } = await supabase
     .from('teachers')
-    .select('id, specialties, bio, created_at, profile:profiles(full_name, email, active)')
+    .select('id, specialties, bio, created_at, profile:profiles!profile_id(full_name, email, active)')
     .eq('school_id', profile.school_id)
     .order('created_at', { ascending: false })
 
