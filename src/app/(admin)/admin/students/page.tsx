@@ -14,11 +14,11 @@ type StudentRow = {
 export default async function StudentsPage() {
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.user) return <p className="p-8 text-red-500">DEBUG: sem sessão</p>
+  if (!session?.user) return null
 
   const { data: profile } = await supabase
     .from('profiles').select('school_id').eq('id', session.user.id).single()
-  if (!profile?.school_id) return <p className="p-8 text-red-500">DEBUG: sem school_id (user: {session.user.id})</p>
+  if (!profile?.school_id) return null
 
   const [{ data: students }, { data: plans }] = await Promise.all([
     supabase
