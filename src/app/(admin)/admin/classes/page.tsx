@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { formatDate } from '@/lib/utils'
 import { BookOpen } from 'lucide-react'
 import AddClassModal from './AddClassModal'
@@ -18,7 +19,8 @@ export default async function ClassesPage() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.user) return null
 
-  const { data: profile } = await supabase
+  const admin = createAdminClient()
+  const { data: profile } = await admin
     .from('profiles').select('school_id').eq('id', session.user.id).single()
   if (!profile?.school_id) return null
 

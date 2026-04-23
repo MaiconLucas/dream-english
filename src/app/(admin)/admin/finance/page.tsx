@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { DollarSign } from 'lucide-react'
 import AddPaymentModal from './AddPaymentModal'
@@ -35,7 +36,8 @@ export default async function FinancePage() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.user) return null
 
-  const { data: profile } = await supabase
+  const admin = createAdminClient()
+  const { data: profile } = await admin
     .from('profiles').select('school_id').eq('id', session.user.id).single()
   if (!profile?.school_id) return null
 
