@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, GraduationCap, BookOpen, DollarSign } from 'lucide-react'
+import { LayoutDashboard, Users, GraduationCap, BookOpen, DollarSign, LogOut } from 'lucide-react'
+import { logout } from '@/app/actions/auth'
 
 const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -12,7 +13,7 @@ const navItems = [
   { href: '/admin/finance', label: 'Financeiro', icon: DollarSign },
 ]
 
-export default function Sidebar({ email }: { email: string }) {
+export default function Sidebar({ name, email }: { name: string; email: string }) {
   const pathname = usePathname()
 
   return (
@@ -44,9 +45,21 @@ export default function Sidebar({ email }: { email: string }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-[#e2e8f0]">
-        <p className="text-xs text-[#64748b] truncate">{email}</p>
-        <p className="text-[10px] text-[#94a3b8] mt-1">v0.1.7</p>
+      <div className="p-4 border-t border-[#e2e8f0] space-y-3">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-[#0f172a] truncate">{name}</p>
+          <p className="text-[11px] text-[#64748b] truncate">{email}</p>
+          <p className="text-[10px] text-[#94a3b8] mt-0.5">v0.1.7</p>
+        </div>
+        <form action={logout}>
+          <button
+            type="submit"
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-[#64748b] hover:bg-red-50 hover:text-red-600 transition"
+          >
+            <LogOut size={15} />
+            Sair
+          </button>
+        </form>
       </div>
     </aside>
   )
