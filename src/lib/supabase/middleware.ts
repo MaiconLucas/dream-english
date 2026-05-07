@@ -25,7 +25,9 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // getSession() lê o cookie local sem chamada de rede — seguro para decisões de roteamento no Edge.
+  // A validação real do JWT acontece no layout admin via getUser().
+  const { data: { session } } = await supabase.auth.getSession()
 
-  return { supabaseResponse, user }
+  return { supabaseResponse, user: session?.user ?? null }
 }
