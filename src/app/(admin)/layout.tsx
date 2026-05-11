@@ -9,15 +9,33 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!user) redirect('/login')
 
-  // Admin client bypassa RLS para leitura segura do perfil
   const admin = createAdminClient()
-  const { data: profile } = await admin
+  const { data: profile, error: profileError } = await admin
     .from('profiles')
     .select('role, full_name')
     .eq('id', user.id)
     .single()
 
-  if (!profile || profile.role !== 'ADMIN') redirect('/login?error=unauthorized')
+  // Logs de diagnóstico — visíveis nos Function Logs da Vercel
+  console.log('[AdminLayout] user.id         :', user.id)
+  console.log('[AdminLayout] user.email       :', user.email)
+  console.log('[AdminLayout] app_metadata.role:', (user.app_metadata as Record<string, unknown>)?.role ?? 'não definido')
+  console.log('[AdminLayout] profile          :', profile ? { role: profile.role, full_name: profile.full_name } : null)
+  console.log('[AdminLayout] profile error    :', profileError?.message ?? null)
+
+  if (!profile || profile.role !== 'ADMIN') {
+    console.log('[AdminLayout] Acesso negado — sem perfil ADMIN para este user.id')
+    redirect('/login?error=unauthorized')
+  }
+
+  // Sincroniza o role para app_metadata para que o middleware possa ler do JWT sem DB call
+  const currentMetaRole = (user.app_metadata as Record<string, unknown>)?.role
+  if (currentMetaRole !== profile.role) {
+    console.log('[AdminLayout] Sincronizando role para app_metadata:', profile.role)
+    await admin.auth.admin.updateUserById(user.id, {
+      app_metadata: { role: profile.role },
+    })
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
