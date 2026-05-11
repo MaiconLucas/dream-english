@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { formatCurrency } from '@/lib/utils'
 import {
   Users,
@@ -48,7 +49,9 @@ async function getDashboardData() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
+  // Admin client bypassa RLS para leitura segura do school_id
+  const admin = createAdminClient()
+  const { data: profile } = await admin
     .from('profiles')
     .select('school_id')
     .eq('id', user.id)
