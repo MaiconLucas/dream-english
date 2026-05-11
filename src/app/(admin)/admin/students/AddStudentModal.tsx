@@ -29,7 +29,7 @@ export default function AddStudentModal({ schoolId, plans }: Props) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
+        className="flex items-center gap-2 px-4 py-2 bg-[#1a56db] text-white text-sm font-medium rounded-lg hover:bg-[#1648c0] transition"
       >
         <UserPlus size={16} />
         Adicionar Aluno
@@ -40,10 +40,10 @@ export default function AddStudentModal({ schoolId, plans }: Props) {
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-text" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+              <h2 className="text-lg font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
                 Novo Aluno
               </h2>
-              <button onClick={() => setOpen(false)} className="text-text-muted hover:text-text">
+              <button onClick={() => setOpen(false)} className="text-[#94a3b8] hover:text-[#0f172a]">
                 <X size={20} />
               </button>
             </div>
@@ -52,23 +52,23 @@ export default function AddStudentModal({ schoolId, plans }: Props) {
               <input type="hidden" name="schoolId" value={schoolId} />
 
               <div>
-                <label className="block text-sm font-medium text-text mb-1.5">Nome completo</label>
-                <input name="fullName" required className="w-full px-3.5 py-2.5 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+                <label className="block text-sm font-medium text-[#374151] mb-1.5">Nome completo</label>
+                <input name="fullName" required className="w-full px-3.5 py-2.5 rounded-lg border border-[#e2e8f0] text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#1a56db] focus:border-transparent" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text mb-1.5">Email</label>
-                <input name="email" type="email" required className="w-full px-3.5 py-2.5 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+                <label className="block text-sm font-medium text-[#374151] mb-1.5">Email</label>
+                <input name="email" type="email" required className="w-full px-3.5 py-2.5 rounded-lg border border-[#e2e8f0] text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#1a56db] focus:border-transparent" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text mb-1.5">Senha temporária</label>
-                <input name="password" type="password" required minLength={6} className="w-full px-3.5 py-2.5 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+                <label className="block text-sm font-medium text-[#374151] mb-1.5">Senha temporária</label>
+                <input name="password" type="password" required minLength={6} className="w-full px-3.5 py-2.5 rounded-lg border border-[#e2e8f0] text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#1a56db] focus:border-transparent" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text mb-1.5">Nível</label>
-                <select name="level" className="w-full px-3.5 py-2.5 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                <label className="block text-sm font-medium text-[#374151] mb-1.5">Nível</label>
+                <select name="level" className="w-full px-3.5 py-2.5 rounded-lg border border-[#e2e8f0] text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#1a56db] focus:border-transparent">
                   <option value="">Selecione...</option>
                   <option value="Básico">Básico</option>
                   <option value="Intermediário">Intermediário</option>
@@ -78,8 +78,8 @@ export default function AddStudentModal({ schoolId, plans }: Props) {
 
               {plans.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-text mb-1.5">Plano</label>
-                  <select name="planId" className="w-full px-3.5 py-2.5 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <label className="block text-sm font-medium text-[#374151] mb-1.5">Plano</label>
+                  <select name="planId" className="w-full px-3.5 py-2.5 rounded-lg border border-[#e2e8f0] text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#1a56db] focus:border-transparent">
                     <option value="">Sem plano</option>
                     {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
@@ -91,10 +91,10 @@ export default function AddStudentModal({ schoolId, plans }: Props) {
               )}
 
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setOpen(false)} className="flex-1 py-2.5 rounded-lg border border-border text-sm font-medium text-text-muted hover:bg-bg transition">
+                <button type="button" onClick={() => setOpen(false)} className="flex-1 py-2.5 rounded-lg border border-[#e2e8f0] text-sm font-medium text-[#64748b] hover:bg-[#f8fafc] transition">
                   Cancelar
                 </button>
-                <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2">
+                <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg bg-[#1a56db] text-white text-sm font-medium hover:bg-[#1648c0] disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2">
                   {loading && <Loader2 size={14} className="animate-spin" />}
                   {loading ? 'Salvando...' : 'Salvar'}
                 </button>
