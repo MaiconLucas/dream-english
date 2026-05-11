@@ -127,20 +127,22 @@ async function getDashboardData() {
   const prevRevenue  = (prevPayments.data ?? []).reduce((s, p) => s + p.amount_cents, 0) / 100
   const overdueAmt   = (overdue.data ?? []).reduce((s, p) => s + p.amount_cents, 0) / 100
 
-  const todayLessons = (todayLessonsRes.data ?? []).map((l) => {
-    const row = l as {
-      id: string
-      title: string
-      scheduled_at: string
-      duration_minutes: number
-      classes: { name: string } | null
-    }
+  type LessonRow = {
+    id: string
+    title: string
+    scheduled_at: string
+    duration_minutes: number
+    classes: { name: string }[] | { name: string } | null
+  }
+
+  const todayLessons = ((todayLessonsRes.data ?? []) as unknown as LessonRow[]).map((row) => {
+    const cls = Array.isArray(row.classes) ? row.classes[0] : row.classes
     return {
       id: row.id,
       title: row.title,
       scheduledAt: row.scheduled_at,
       durationMinutes: row.duration_minutes,
-      className: row.classes?.name ?? '—',
+      className: cls?.name ?? '—',
     }
   })
 
