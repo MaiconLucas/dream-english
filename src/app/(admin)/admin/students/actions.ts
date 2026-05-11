@@ -32,8 +32,15 @@ export async function createStudent(
     email,
     password,
     email_confirm: true,
+    user_metadata: { full_name: fullName, school_id: schoolId, phone: phone.trim() || null },
   })
-  if (authError) return { error: authError.message }
+  if (authError) {
+    console.error('[createStudent] auth.admin.createUser error:', JSON.stringify(authError))
+    if (authError.message.includes('already been registered') || authError.message.includes('already exists')) {
+      return { error: 'Já existe um usuário com este email.' }
+    }
+    return { error: authError.message }
+  }
 
   const userId = authData.user.id
 
