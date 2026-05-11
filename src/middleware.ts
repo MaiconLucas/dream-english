@@ -17,7 +17,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  if (user && isPublic && pathname !== '/api/auth/callback') {
+  const hasError = request.nextUrl.searchParams.has('error')
+  if (user && isPublic && pathname !== '/api/auth/callback' && !hasError) {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url))
   }
 
