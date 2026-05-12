@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
-import { BookOpen, LogOut } from 'lucide-react'
+import { BookOpen, LayoutDashboard, LogOut } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
@@ -32,6 +32,11 @@ export default async function StudentLayout({ children }: { children: React.Reac
           🎓 Dream English
         </span>
         <nav className="flex items-center gap-1 ml-4">
+          <Link href="/dashboard"
+            className="px-3 py-1.5 rounded-lg text-sm font-medium text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a] transition flex items-center gap-1.5">
+            <LayoutDashboard size={14} />
+            Dashboard
+          </Link>
           <Link href="/trail"
             className="px-3 py-1.5 rounded-lg text-sm font-medium text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a] transition flex items-center gap-1.5">
             <BookOpen size={14} />
