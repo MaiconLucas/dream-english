@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Pencil, User, Phone, Mail, BookOpen, CreditCard, Calendar } from 'lucide-react'
+import { ChevronLeft, Pencil, User, Phone, Mail, BookOpen, CreditCard, Calendar, ClipboardList } from 'lucide-react'
 import { formatDate, formatCurrency } from '@/lib/utils'
 
 type Payment = {
@@ -20,6 +20,13 @@ type Lesson = {
   scheduled_at: string
   completed: boolean
   classes: { name: string } | null
+}
+
+type AttRecord = {
+  id: string
+  status: string
+  scheduled_at: string
+  class_name: string
 }
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
@@ -64,7 +71,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
     ? (Array.isArray(activeEnrollment.classes) ? activeEnrollment.classes[0] : activeEnrollment.classes)
     : null
 
-  const [paymentsRes, lessonsRes] = await Promise.all([
+  const [paymentsRes, lessonsRes, attendanceRes] = await Promise.all([
     admin
       .from('payments')
       .select('id, amount_cents, status, due_date, paid_at, description')
@@ -78,9 +85,28 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
       .contains('student_ids', [params.id])
       .order('scheduled_at', { ascending: false })
       .limit(20),
+    admin
+      .from('attendance')
+      .select('id, status, lessons!lesson_id(scheduled_at, classes!class_id(name))')
+      .eq('student_id', params.id),
   ])
 
   const payments = (paymentsRes.data ?? []) as Payment[]
+
+  const attRecords: AttRecord[] = ((attendanceRes.data ?? []) as unknown as Array<{
+    id: string; status: string
+    lessons: { scheduled_at: string; classes: { name: string } | { name: string }[] | null } | null
+  }>).flatMap(a => {
+    if (!a.lessons) return []
+    const cls = Array.isArray(a.lessons.classes) ? a.lessons.classes[0] : a.lessons.classes
+    return [{ id: a.id, status: a.status, scheduled_at: a.lessons.scheduled_at, class_name: cls?.name ?? '—' }]
+  })
+  attRecords.sort((a, b) => b.scheduled_at.localeCompare(a.scheduled_at))
+
+  const totalAtt = attRecords.length
+  const presentCount = attRecords.filter(a => a.status === 'PRESENT').length
+  const absentCount = attRecords.filter(a => a.status === 'ABSENT').length
+  const presencePct = totalAtt > 0 ? Math.round((presentCount / totalAtt) * 100) : null
   const rawLessons = (lessonsRes.data ?? []) as unknown as Array<{
     id: string; title: string; scheduled_at: string; completed: boolean
     classes: { name: string } | { name: string }[] | null
@@ -187,6 +213,66 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                           <td className="px-4 py-3">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${s.className}`}>
                               {s.label}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Attendance */}
+          <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#e2e8f0]">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                  Histórico de Presença
+                </h2>
+                {presencePct !== null && (
+                  <div className="flex items-center gap-4 text-xs text-[#64748b]">
+                    <span>{totalAtt} aulas</span>
+                    <span className="text-[#10b981] font-medium">{presentCount} presenças</span>
+                    <span className="text-red-500 font-medium">{absentCount} ausências</span>
+                    <span className="font-bold text-[#0f172a]">{presencePct}%</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            {attRecords.length === 0 ? (
+              <div className="px-5 py-10 text-center">
+                <ClipboardList size={32} className="text-[#e2e8f0] mx-auto mb-2" />
+                <p className="text-sm text-[#64748b]">Nenhum registro de presença encontrado.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[#e2e8f0] bg-[#f8fafc]">
+                      {['Data', 'Turma', 'Status'].map(h => (
+                        <th key={h} className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attRecords.map(a => {
+                      const badgeMap: Record<string, { label: string; className: string }> = {
+                        PRESENT:   { label: 'Presente',    className: 'bg-[#ecfdf5] text-[#10b981]' },
+                        ABSENT:    { label: 'Ausente',     className: 'bg-red-50 text-red-600' },
+                        LATE:      { label: 'Atrasado',    className: 'bg-amber-50 text-[#f59e0b]' },
+                        JUSTIFIED: { label: 'Justificado', className: 'bg-[#ebf3ff] text-[#1a56db]' },
+                      }
+                      const badge = badgeMap[a.status] ?? { label: a.status, className: 'bg-[#f1f5f9] text-[#64748b]' }
+                      const date = new Date(a.scheduled_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                      return (
+                        <tr key={a.id} className="border-b border-[#f1f5f9] last:border-0 hover:bg-[#f8fafc] transition">
+                          <td className="px-4 py-3 text-[#0f172a] whitespace-nowrap">{date}</td>
+                          <td className="px-4 py-3 text-[#64748b]">{a.class_name}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badge.className}`}>
+                              {badge.label}
                             </span>
                           </td>
                         </tr>
