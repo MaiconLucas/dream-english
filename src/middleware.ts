@@ -20,10 +20,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Autenticado em rota pública: redireciona para dashboard
+  // Autenticado em rota pública: redireciona para destino correto por role
   const hasError = request.nextUrl.searchParams.has('error')
   if (user && isPublic && pathname !== '/api/auth/callback' && !hasError) {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    const role = (user.app_metadata as Record<string, unknown>)?.role as string | undefined
+    const dest = role === 'STUDENT' ? '/trail' : '/admin/dashboard'
+    return NextResponse.redirect(new URL(dest, request.url))
   }
 
   // Rotas /admin/*: verifica role do JWT app_metadata (sem DB call)

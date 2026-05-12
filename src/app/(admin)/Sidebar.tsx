@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, GraduationCap, BookOpen, DollarSign, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, GraduationCap, BookOpen, DollarSign, LogOut, Layers, ClipboardList } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 
 const navItems = [
@@ -10,6 +10,8 @@ const navItems = [
   { href: '/admin/students', label: 'Alunos', icon: Users },
   { href: '/admin/teachers', label: 'Professores', icon: GraduationCap },
   { href: '/admin/classes', label: 'Turmas', icon: BookOpen },
+  { href: '/admin/modules', label: 'Módulos', icon: Layers },
+  { href: '/admin/homework', label: 'Homework', icon: ClipboardList },
   { href: '/admin/finance', label: 'Financeiro', icon: DollarSign },
 ]
 
@@ -24,7 +26,7 @@ export default function Sidebar({ name, email }: { name: string; email: string }
         </span>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
@@ -34,7 +36,7 @@ export default function Sidebar({ name, email }: { name: string; email: string }
               prefetch={false}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
                 active
-                  ? 'bg-primary-light text-primary'
+                  ? 'bg-[#ebf3ff] text-[#1a56db]'
                   : 'text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]'
               }`}
             >
@@ -49,7 +51,7 @@ export default function Sidebar({ name, email }: { name: string; email: string }
         <div className="min-w-0">
           <p className="text-xs font-medium text-[#0f172a] truncate">{name}</p>
           <p className="text-[11px] text-[#64748b] truncate">{email}</p>
-          <p className="text-[10px] text-[#94a3b8] mt-0.5">v0.1.7</p>
+          <p className="text-[10px] text-[#94a3b8] mt-0.5">v0.2.0</p>
         </div>
         <form action={logout}>
           <button
