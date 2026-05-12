@@ -37,9 +37,6 @@ function LoginForm() {
     const { data, error } = await supabase.auth.signInWithPassword({ email: devEmail, password: devPassword })
     if (error) { setError(error.message); setLoading(false); return }
     const dest = await resolveDestination(supabase, data.user.id, (data.user.app_metadata as Record<string, unknown>)?.role as string | undefined)
-    await new Promise(resolve => setTimeout(resolve, 500))
-    router.refresh()
-    await new Promise(resolve => setTimeout(resolve, 300))
     window.location.replace(dest)
   }
 
@@ -58,9 +55,6 @@ function LoginForm() {
     }
 
     const dest = await resolveDestination(supabase, data.user.id, (data.user.app_metadata as Record<string, unknown>)?.role as string | undefined)
-    await new Promise(resolve => setTimeout(resolve, 500))
-    router.refresh()
-    await new Promise(resolve => setTimeout(resolve, 300))
     window.location.replace(dest)
   }
 
