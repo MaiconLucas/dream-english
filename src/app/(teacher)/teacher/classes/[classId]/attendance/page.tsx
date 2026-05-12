@@ -58,7 +58,6 @@ export default async function AttendancePage({ params }: { params: { classId: st
       ) : (
         <AttendanceForm
           classId={params.classId}
-          schoolId={cls.school_id}
           students={students}
         />
       )}

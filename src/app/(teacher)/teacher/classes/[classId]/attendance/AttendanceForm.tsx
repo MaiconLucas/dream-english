@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { saveAttendance } from './actions'
 import type { AttendanceStatus } from '@/types/database'
-import { CheckCircle2, XCircle, Clock, FileCheck, Loader2 } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock, FileCheck, Loader2, CalendarDays } from 'lucide-react'
 
 type Student = { student_id: string; full_name: string }
 
@@ -44,18 +44,29 @@ const STATUSES: {
   },
 ]
 
+function defaultDatetime() {
+  const now = new Date()
+  now.setSeconds(0, 0)
+  return now.toISOString().slice(0, 16)
+}
+
+function formatDatetime(iso: string) {
+  const d = new Date(iso)
+  return d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+}
+
 export default function AttendanceForm({
   classId,
-  schoolId,
   students,
 }: {
   classId: string
-  schoolId: string
   students: Student[]
 }) {
+  const [date, setDate] = useState(defaultDatetime)
   const [statuses, setStatuses] = useState<Record<string, AttendanceStatus>>(
     Object.fromEntries(students.map(s => [s.student_id, 'PRESENT' as AttendanceStatus]))
   )
+  const [savedDate, setSavedDate] = useState('')
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -67,9 +78,10 @@ export default function AttendanceForm({
   function handleSave() {
     setError('')
     startTransition(async () => {
-      const entries = students.map(s => ({ student_id: s.student_id, status: statuses[s.student_id] }))
-      const result = await saveAttendance({ classId, schoolId, entries })
-      if (result?.error) { setError(result.error); return }
+      const records = students.map(s => ({ studentId: s.student_id, status: statuses[s.student_id] }))
+      const result = await saveAttendance(classId, new Date(date).toISOString(), records)
+      if (result.error) { setError(result.error); return }
+      setSavedDate(formatDatetime(date))
       setDone(true)
     })
   }
@@ -81,7 +93,7 @@ export default function AttendanceForm({
         <div>
           <p className="text-sm font-semibold text-[#065f46]">Chamada salva com sucesso!</p>
           <p className="text-xs text-[#047857] mt-0.5">
-            {students.length} aluno{students.length !== 1 ? 's' : ''} registrado{students.length !== 1 ? 's' : ''}.
+            {students.length} aluno{students.length !== 1 ? 's' : ''} registrado{students.length !== 1 ? 's' : ''} — {savedDate}
           </p>
         </div>
       </div>
@@ -90,6 +102,21 @@ export default function AttendanceForm({
 
   return (
     <div className="space-y-4">
+      {/* Data e hora da aula */}
+      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-5">
+        <label className="flex items-center gap-2 text-sm font-medium text-[#0f172a] mb-2">
+          <CalendarDays size={15} className="text-[#64748b]" />
+          Data e hora da aula
+        </label>
+        <input
+          type="datetime-local"
+          value={date}
+          onChange={e => setDate(e.target.value)}
+          className="px-3.5 py-2.5 rounded-lg border border-[#e2e8f0] text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#1a56db] focus:border-transparent transition"
+        />
+      </div>
+
+      {/* Lista de alunos */}
       <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
         {students.map((s, i) => (
           <div
@@ -126,7 +153,7 @@ export default function AttendanceForm({
       <button
         type="button"
         onClick={handleSave}
-        disabled={isPending}
+        disabled={isPending || !date}
         className="flex items-center gap-2 px-5 py-2.5 bg-[#1a56db] text-white text-sm font-medium rounded-lg hover:bg-[#1648c0] disabled:opacity-60 disabled:cursor-not-allowed transition"
       >
         {isPending && <Loader2 size={15} className="animate-spin" />}
