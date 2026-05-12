@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '')
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,13 +38,9 @@ export async function POST(request: NextRequest) {
       homework.instructions ? `\nInstruções: ${homework.instructions}` : '',
     ].join('')
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: `Você é um professor de inglês experiente. Corrija a seguinte atividade:
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+
+    const prompt = `Você é um professor de inglês experiente. Corrija a seguinte atividade:
 
 Enunciado: ${enunciado}
 Resposta do aluno: ${submission.content ?? '(sem resposta)'}
@@ -56,12 +52,10 @@ Forneça:
 4. Pontos positivos da resposta
 
 Responda SOMENTE em JSON válido, sem texto fora do JSON:
-{ "grade": number, "feedback": string, "corrections": string, "positives": string }`,
-        },
-      ],
-    })
+{ "grade": number, "feedback": string, "corrections": string, "positives": string }`
 
-    const rawText = message.content[0].type === 'text' ? message.content[0].text : ''
+    const result = await model.generateContent(prompt)
+    const rawText = result.response.text()
 
     let parsed: { grade: number; feedback: string; corrections: string; positives: string }
     try {
