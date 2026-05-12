@@ -16,6 +16,7 @@ export default async function RootPage() {
     .single()
 
   if (profile?.role === 'STUDENT') redirect('/trail')
+  if (profile?.role === 'TEACHER') redirect('/teacher/dashboard')
 
   redirect('/admin/dashboard')
 }

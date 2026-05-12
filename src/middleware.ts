@@ -9,6 +9,7 @@ export async function middleware(request: NextRequest) {
   const isPublic = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
   const isResetPassword = pathname.startsWith(RESET_PASSWORD_ROUTE)
   const isAdminRoute = pathname.startsWith('/admin')
+  const isTeacherRoute = pathname.startsWith('/teacher')
 
   // Lê sessão do cookie (sem DB call — usa getSession internamente)
   const { supabaseResponse, user } = await updateSession(request)
@@ -27,7 +28,7 @@ export async function middleware(request: NextRequest) {
   if (user && isPublic && pathname !== '/api/auth/callback' && !hasError) {
     const role = (user.app_metadata as Record<string, unknown>)?.role as string | undefined
     if (role) {
-      const dest = role === 'STUDENT' ? '/trail' : '/admin/dashboard'
+      const dest = role === 'STUDENT' ? '/trail' : role === 'TEACHER' ? '/teacher/dashboard' : '/admin/dashboard'
       return NextResponse.redirect(new URL(dest, request.url))
     }
   }
@@ -38,10 +39,16 @@ export async function middleware(request: NextRequest) {
     const role = (user.app_metadata as Record<string, unknown>)?.role as string | undefined
     console.log(`[Middleware] /admin — user: ${user.id} | app_metadata.role: ${role ?? 'não sincronizado ainda'}`)
 
-    // Bloqueia apenas se o role estiver explicitamente definido como não-ADMIN.
-    // Se ainda não foi sincronizado (primeira visita), o AdminLayout fará a verificação.
     if (role && role !== 'ADMIN') {
       console.log('[Middleware] Bloqueado: role não é ADMIN')
+      return NextResponse.redirect(new URL('/login?error=unauthorized', request.url))
+    }
+  }
+
+  // Rotas /teacher/*: verifica role do JWT app_metadata (sem DB call)
+  if (user && isTeacherRoute) {
+    const role = (user.app_metadata as Record<string, unknown>)?.role as string | undefined
+    if (role && role !== 'TEACHER') {
       return NextResponse.redirect(new URL('/login?error=unauthorized', request.url))
     }
   }
