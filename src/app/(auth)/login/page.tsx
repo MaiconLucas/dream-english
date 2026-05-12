@@ -15,15 +15,6 @@ function LoginForm() {
     searchParams.get('error') === 'unauthorized' ? 'Sua conta não tem permissão para acessar o painel.' : ''
   )
 
-  async function resolveDestination(supabase: ReturnType<typeof createClient>, userId: string, appMetaRole?: string) {
-    let role = appMetaRole
-    if (!role) {
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single()
-      role = profile?.role as string | undefined
-    }
-    return role === 'STUDENT' ? '/trail' : '/admin/dashboard'
-  }
-
   async function handleDevLogin() {
     const devEmail = process.env.NEXT_PUBLIC_DEV_EMAIL
     const devPassword = process.env.NEXT_PUBLIC_DEV_PASSWORD
@@ -33,10 +24,9 @@ function LoginForm() {
     setLoading(true)
     setError('')
     const supabase = createClient()
-    const { data, error } = await supabase.auth.signInWithPassword({ email: devEmail, password: devPassword })
+    const { error } = await supabase.auth.signInWithPassword({ email: devEmail, password: devPassword })
     if (error) { setError(error.message); setLoading(false); return }
-    const dest = await resolveDestination(supabase, data.user.id, (data.user.app_metadata as Record<string, unknown>)?.role as string | undefined)
-    window.location.replace(dest)
+    window.location.replace('/')
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -45,7 +35,7 @@ function LoginForm() {
     setError('')
 
     const supabase = createClient()
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError('Email ou senha incorretos.')
@@ -53,8 +43,7 @@ function LoginForm() {
       return
     }
 
-    const dest = await resolveDestination(supabase, data.user.id, (data.user.app_metadata as Record<string, unknown>)?.role as string | undefined)
-    window.location.replace(dest)
+    window.location.replace('/')
   }
 
   return (
