@@ -87,19 +87,19 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
       .limit(20),
     admin
       .from('attendance')
-      .select('id, status, lessons!lesson_id(scheduled_at, classes!class_id(name))')
+      .select('id, status, created_at, lessons!lesson_id(scheduled_at, classes!class_id(name))')
       .eq('student_id', params.id),
   ])
 
   const payments = (paymentsRes.data ?? []) as Payment[]
 
   const attRecords: AttRecord[] = ((attendanceRes.data ?? []) as unknown as Array<{
-    id: string; status: string
+    id: string; status: string; created_at: string
     lessons: { scheduled_at: string; classes: { name: string } | { name: string }[] | null } | null
-  }>).flatMap(a => {
-    if (!a.lessons) return []
-    const cls = Array.isArray(a.lessons.classes) ? a.lessons.classes[0] : a.lessons.classes
-    return [{ id: a.id, status: a.status, scheduled_at: a.lessons.scheduled_at, class_name: cls?.name ?? '—' }]
+  }>).map(a => {
+    const scheduled_at = a.lessons?.scheduled_at ?? a.created_at
+    const cls = a.lessons ? (Array.isArray(a.lessons.classes) ? a.lessons.classes[0] : a.lessons.classes) : null
+    return { id: a.id, status: a.status, scheduled_at, class_name: cls?.name ?? '—' }
   })
   attRecords.sort((a, b) => b.scheduled_at.localeCompare(a.scheduled_at))
 

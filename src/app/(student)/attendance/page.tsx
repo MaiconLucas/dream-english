@@ -39,21 +39,20 @@ export default async function StudentAttendancePage() {
 
   const { data: raw } = await admin
     .from('attendance')
-    .select('id, status, lessons!lesson_id(title, scheduled_at, classes!class_id(name))')
+    .select('id, status, created_at, lessons!lesson_id(title, scheduled_at, classes!class_id(name))')
     .eq('student_id', student.id)
 
-  const rows: AttendanceRow[] = (raw ?? []).flatMap(a => {
-    const lesson = resolveOne((a as unknown as { lessons: unknown }).lessons)
-    if (!lesson) return []
-    const l = lesson as { title: string; scheduled_at: string; classes: unknown }
-    const cls = resolveOne(l.classes)
-    return [{
+  const rows: AttendanceRow[] = (raw ?? []).map(a => {
+    const lesson = resolveOne((a as unknown as { lessons: unknown; created_at: string }).lessons)
+    const l = lesson as { title: string; scheduled_at: string; classes: unknown } | null
+    const cls = l ? resolveOne(l.classes) : null
+    return {
       id: a.id,
       status: a.status,
-      scheduled_at: l.scheduled_at,
-      lesson_title: l.title,
+      scheduled_at: l?.scheduled_at ?? (a as unknown as { created_at: string }).created_at,
+      lesson_title: l?.title ?? '—',
       class_name: cls ? (cls as { name: string }).name : '—',
-    }]
+    }
   })
 
   rows.sort((a, b) => b.scheduled_at.localeCompare(a.scheduled_at))
