@@ -1,15 +1,17 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Lock, CheckCircle, Circle, ChevronRight } from 'lucide-react'
+import { Lock, CheckCircle, ChevronRight, BookOpen } from 'lucide-react'
 
-type ModuleRow = {
-  id: string
-  title: string
-  description: string | null
-  level: string
-  order_index: number
-  active: boolean
+const CEFR_COLORS: Record<string, string> = {
+  'A1':    'bg-emerald-50 text-emerald-700',
+  'A1/A2': 'bg-emerald-50 text-emerald-700',
+  'A2':    'bg-blue-50 text-blue-700',
+  'A2/B1': 'bg-blue-50 text-blue-700',
+  'B1':    'bg-violet-50 text-violet-700',
+  'B1/B2': 'bg-violet-50 text-violet-700',
+  'B2':    'bg-orange-50 text-orange-700',
+  'C1':    'bg-red-50 text-red-700',
 }
 
 export default async function TrailPage() {
@@ -19,85 +21,72 @@ export default async function TrailPage() {
 
   const admin = createAdminClient()
 
-  // Get student level
-  const { data: student } = await admin
-    .from('students')
-    .select('id, level')
-    .eq('profile_id', user.id)
-    .single()
-
-  if (!student?.level) {
-    return (
-      <div className="text-center py-16">
-        <p className="text-[#64748b] text-sm">Seu cadastro ainda não possui um nível definido.</p>
-        <p className="text-[#94a3b8] text-xs mt-1">Fale com seu professor.</p>
-      </div>
-    )
-  }
-
-  const { data: myProfile } = await admin
+  const { data: profile } = await admin
     .from('profiles').select('school_id').eq('id', user.id).single()
-  if (!myProfile) return null
+  if (!profile) return null
 
-  const { data: rawModules } = await admin
-    .from('modules')
-    .select('id, title, description, level, order_index, active')
-    .eq('school_id', myProfile.school_id)
-    .eq('level', student.level)
-    .eq('active', true)
+  const { data: student } = await admin
+    .from('students').select('id').eq('profile_id', user.id).single()
+
+  const { data: modules } = await admin
+    .from('course_modules')
+    .select('id, title, description, cefr_level, order_index')
+    .eq('school_id', profile.school_id)
+    .eq('is_published', true)
     .order('order_index')
 
-  const modules = (rawModules ?? []) as ModuleRow[]
-
-  if (modules.length === 0) {
+  if (!modules || modules.length === 0) {
     return (
-      <div className="text-center py-16">
-        <p className="text-[#64748b] text-sm">Nenhum módulo disponível para o nível <strong>{student.level}</strong> ainda.</p>
+      <div>
+        <h1 className="text-2xl font-bold text-[#0f172a] mb-8" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+          Minha Trilha
+        </h1>
+        <div className="text-center py-16">
+          <BookOpen size={32} className="mx-auto text-[#94a3b8] mb-3" />
+          <p className="text-sm text-[#64748b]">Nenhuma aula disponível ainda.</p>
+          <p className="text-xs text-[#94a3b8] mt-1">Aguarde seu professor publicar o conteúdo.</p>
+        </div>
       </div>
     )
   }
 
-  // Get student's completed module IDs (has CORRECTED submission for any homework of that module)
-  // Simplified: a module is "done" if there's any SUBMITTED or CORRECTED submission for homeworks of that module
-  // We check via hw_submissions → homework → module_id (requires migration)
-  // Fallback: use submitted_at to mark as done
-  const { data: submissions } = await admin
-    .from('hw_submissions')
-    .select('homework_id, status')
-    .eq('student_id', student.id)
-    .in('status', ['SUBMITTED', 'CORRECTED'])
+  const moduleIds = modules.map(m => m.id)
 
-  const submittedHomeworkIds = new Set((submissions ?? []).map((s) => s.homework_id))
+  const { data: lessonRows } = await admin
+    .from('course_lessons')
+    .select('id, module_id')
+    .in('module_id', moduleIds)
+    .eq('status', 'PUBLISHED')
 
-  // Get homework per module (using module_id if available, else no link)
-  const moduleIds = modules.map((m) => m.id)
-  const { data: hwData } = moduleIds.length
+  const lessonsByModule: Record<string, string[]> = {}
+  for (const l of lessonRows ?? []) {
+    if (!lessonsByModule[l.module_id]) lessonsByModule[l.module_id] = []
+    lessonsByModule[l.module_id].push(l.id)
+  }
+
+  const allLessonIds = (lessonRows ?? []).map(l => l.id)
+  const { data: progressRows } = student && allLessonIds.length
     ? await admin
-        .from('homework')
-        .select('id, module_id')
-        .in('module_id', moduleIds)
-        .eq('school_id', myProfile.school_id)
+        .from('lesson_progress')
+        .select('lesson_id, completed')
+        .eq('student_id', student.id)
+        .in('lesson_id', allLessonIds)
     : { data: [] }
 
-  const hwByModule: Record<string, string[]> = {}
-  for (const hw of hwData ?? []) {
-    if (hw.module_id) {
-      if (!hwByModule[hw.module_id]) hwByModule[hw.module_id] = []
-      hwByModule[hw.module_id].push(hw.id)
-    }
+  const completedSet = new Set(
+    (progressRows ?? []).filter(p => p.completed).map(p => p.lesson_id)
+  )
+
+  function moduleProgress(moduleId: string) {
+    const ids = lessonsByModule[moduleId] ?? []
+    const total = ids.length
+    const done = ids.filter(id => completedSet.has(id)).length
+    return { total, done, isDone: total > 0 && done === total }
   }
 
-  function isModuleDone(moduleId: string): boolean {
-    const hwIds = hwByModule[moduleId] ?? []
-    if (hwIds.length === 0) return false
-    return hwIds.every((id) => submittedHomeworkIds.has(id))
-  }
-
-  function isModuleUnlocked(index: number): boolean {
+  function isUnlocked(index: number): boolean {
     if (index === 0) return true
-    const prev = modules[index - 1]
-    if (!prev) return false
-    return isModuleDone(prev.id)
+    return moduleProgress(modules![index - 1].id).isDone
   }
 
   return (
@@ -107,54 +96,72 @@ export default async function TrailPage() {
           Minha Trilha
         </h1>
         <p className="text-sm text-[#64748b] mt-1">
-          Nível: <span className="font-medium text-[#1a56db]">{student.level}</span> · {modules.length} módulo{modules.length !== 1 ? 's' : ''}
+          {modules.length} módulo{modules.length !== 1 ? 's' : ''}
         </p>
       </div>
 
       <div className="space-y-3">
         {modules.map((mod, index) => {
-          const done = isModuleDone(mod.id)
-          const unlocked = isModuleUnlocked(index)
+          const { total, done, isDone } = moduleProgress(mod.id)
+          const unlocked = isUnlocked(index)
+          const pct = total > 0 ? Math.round((done / total) * 100) : 0
 
           return (
-            <div key={mod.id} className={`relative bg-white rounded-xl border shadow-sm overflow-hidden transition ${
-              !unlocked ? 'opacity-60 cursor-not-allowed border-[#e2e8f0]' :
-              done ? 'border-[#bbf7d0]' : 'border-[#e2e8f0] hover:border-[#1a56db]'
-            }`}>
+            <div
+              key={mod.id}
+              className={`relative bg-white rounded-xl border shadow-sm overflow-hidden transition ${
+                !unlocked
+                  ? 'opacity-60 cursor-not-allowed border-[#e2e8f0]'
+                  : isDone
+                  ? 'border-[#bbf7d0]'
+                  : 'border-[#e2e8f0] hover:border-[#1a56db]'
+              }`}
+            >
               <div className="flex items-center gap-4 px-5 py-4">
-                {/* Icon */}
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  done ? 'bg-[#ecfdf5]' : unlocked ? 'bg-[#ebf3ff]' : 'bg-[#f1f5f9]'
+                  isDone ? 'bg-[#ecfdf5]' : unlocked ? 'bg-[#ebf3ff]' : 'bg-[#f1f5f9]'
                 }`}>
                   {!unlocked ? (
                     <Lock size={16} className="text-[#94a3b8]" />
-                  ) : done ? (
+                  ) : isDone ? (
                     <CheckCircle size={18} className="text-[#10b981]" />
                   ) : (
-                    <Circle size={18} className="text-[#1a56db]" />
+                    <span className="text-sm font-bold text-[#1a56db]">{index + 1}</span>
                   )}
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-[#94a3b8]">Módulo {index + 1}</span>
-                    {done && (
-                      <span className="text-xs font-medium text-[#10b981] bg-[#ecfdf5] px-2 py-0.5 rounded-full">Concluído</span>
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${CEFR_COLORS[mod.cefr_level] ?? 'bg-gray-100 text-gray-600'}`}>
+                      {mod.cefr_level}
+                    </span>
+                    {isDone && (
+                      <span className="text-[10px] font-semibold text-[#10b981] bg-[#ecfdf5] px-2 py-0.5 rounded-full">Concluído</span>
                     )}
                   </div>
-                  <p className="text-sm font-semibold text-[#0f172a] truncate mt-0.5">{mod.title}</p>
+                  <p className="text-sm font-semibold text-[#0f172a] truncate">{mod.title}</p>
                   {mod.description && (
                     <p className="text-xs text-[#64748b] truncate mt-0.5">{mod.description}</p>
                   )}
+                  {total > 0 && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-[#f1f5f9] rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${isDone ? 'bg-[#10b981]' : 'bg-[#1a56db]'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-[#94a3b8] flex-shrink-0">{done}/{total} aulas</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Arrow */}
-                {unlocked && (
-                  <Link href={`/trail/${mod.id}`} className="absolute inset-0" aria-label={`Abrir ${mod.title}`} />
-                )}
-                <ChevronRight size={16} className={unlocked ? 'text-[#94a3b8]' : 'text-[#e2e8f0]'} />
+                <ChevronRight size={16} className={`flex-shrink-0 ${unlocked ? 'text-[#94a3b8]' : 'text-[#e2e8f0]'}`} />
               </div>
+
+              {unlocked && (
+                <Link href={`/trail/${mod.id}`} className="absolute inset-0" aria-label={`Abrir ${mod.title}`} />
+              )}
             </div>
           )
         })}
