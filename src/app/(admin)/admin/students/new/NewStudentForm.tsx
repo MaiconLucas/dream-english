@@ -19,8 +19,10 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+type Plan = { id: string; name: string; price_cents: number; due_day: number | null }
+
 type Props = {
-  plans: { id: string; name: string }[]
+  plans: Plan[]
   classes: { id: string; name: string }[]
   schoolId: string
 }
@@ -112,9 +114,11 @@ export default function NewStudentForm({ plans, classes, schoolId }: Props) {
           <Field label="Plano" error={errors.planId?.message}>
             <select {...register('planId')} className={inputCls(!!errors.planId)}>
               <option value="">Selecionar plano</option>
-              {plans.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
+              {plans.map((p) => {
+                const price = (p.price_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                const day = p.due_day ? ` — vence dia ${p.due_day}` : ''
+                return <option key={p.id} value={p.id}>{p.name} — {price}{day}</option>
+              })}
             </select>
           </Field>
 

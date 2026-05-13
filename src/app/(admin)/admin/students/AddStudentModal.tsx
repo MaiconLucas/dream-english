@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { X, Loader2, UserPlus } from 'lucide-react'
 import { addStudent } from './actions'
 
-interface Plan { id: string; name: string }
+interface Plan { id: string; name: string; price_cents: number; due_day: number | null }
 interface Props { schoolId: string; plans: Plan[] }
 
 export default function AddStudentModal({ schoolId, plans }: Props) {
@@ -81,7 +81,11 @@ export default function AddStudentModal({ schoolId, plans }: Props) {
                   <label className="block text-sm font-medium text-[#374151] mb-1.5">Plano</label>
                   <select name="planId" className="w-full px-3.5 py-2.5 rounded-lg border border-[#e2e8f0] text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#1a56db] focus:border-transparent">
                     <option value="">Sem plano</option>
-                    {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {plans.map(p => {
+                      const price = (p.price_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                      const day = p.due_day ? ` — vence dia ${p.due_day}` : ''
+                      return <option key={p.id} value={p.id}>{p.name} — {price}{day}</option>
+                    })}
                   </select>
                 </div>
               )}

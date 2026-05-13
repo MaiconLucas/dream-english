@@ -83,7 +83,42 @@ export async function createStudent(
     })
   }
 
+  if (planId.trim()) {
+    const { data: plan } = await admin
+      .from('plans')
+      .select('price_cents, due_day')
+      .eq('id', planId.trim())
+      .single()
+
+    if (plan) {
+      const dueDay = (plan as unknown as { price_cents: number; due_day: number | null }).due_day ?? 10
+      const priceCents = (plan as unknown as { price_cents: number }).price_cents
+      const now = new Date()
+
+      const paymentRows = Array.from({ length: 12 }, (_, i) => {
+        const year = now.getFullYear() + Math.floor((now.getMonth() + i) / 12)
+        const month = (now.getMonth() + i) % 12
+        const lastDay = new Date(year, month + 1, 0).getDate()
+        const day = Math.min(dueDay, lastDay)
+        const dueDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+        const referenceMonth = `${year}-${String(month + 1).padStart(2, '0')}`
+        return {
+          school_id: schoolId,
+          student_id: student.id,
+          plan_id: planId.trim(),
+          amount_cents: priceCents,
+          due_date: dueDate,
+          status: 'PENDING',
+          reference_month: referenceMonth,
+        }
+      })
+
+      await admin.from('payments').insert(paymentRows)
+    }
+  }
+
   revalidatePath('/admin/students')
+  revalidatePath('/admin/finance')
   return { error: null, studentId: student.id as string }
 }
 

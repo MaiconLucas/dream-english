@@ -21,7 +21,7 @@ export default async function NewStudentPage() {
   const [{ data: plans }, { data: classes }] = await Promise.all([
     admin
       .from('plans')
-      .select('id, name')
+      .select('id, name, price_cents, due_day')
       .eq('school_id', myProfile.school_id)
       .order('name'),
     admin
