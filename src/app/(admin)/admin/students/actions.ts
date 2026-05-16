@@ -84,11 +84,13 @@ export async function createStudent(
   }
 
   if (planId.trim()) {
-    const { data: plan } = await admin
+    const { data: plan, error: planError } = await admin
       .from('plans')
       .select('price_cents, due_day')
       .eq('id', planId.trim())
       .single()
+
+    console.log('[payments] plan fetch:', plan, 'planError:', planError?.message)
 
     if (plan) {
       const dueDay = (plan as unknown as { price_cents: number; due_day: number | null }).due_day ?? 10
@@ -105,15 +107,15 @@ export async function createStudent(
         return {
           school_id: schoolId,
           student_id: student.id,
-          plan_id: planId.trim(),
           amount_cents: priceCents,
           due_date: dueDate,
           status: 'PENDING',
           reference_month: referenceMonth,
+          description: `Mensalidade ${referenceMonth}`,
         }
       })
 
-      console.log('[payments] plan:', plan, 'rows:', paymentRows.length)
+      console.log('[payments] rows to insert:', paymentRows.length, 'first:', paymentRows[0])
       const { error: payError } = await admin.from('payments').insert(paymentRows)
       console.log('[payments] insert result:', payError ? payError.message : 'OK')
     }
