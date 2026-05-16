@@ -14,10 +14,7 @@ type PaymentRow = {
   paid_at: string | null
   reference_month: string | null
   description: string | null
-  student: {
-    id: string
-    profile: { full_name: string } | null
-  } | null
+  student_id: string
 }
 
 const statusStyles: Record<string, string> = {
@@ -52,7 +49,7 @@ export default async function FinancePage({
 
   let query = admin
     .from('payments')
-    .select('id, amount_cents, status, due_date, paid_at, reference_month, description, student:students!student_id(id, profile:profiles!profile_id(full_name))')
+    .select('id, amount_cents, status, due_date, paid_at, reference_month, description, student_id')
     .eq('school_id', profile.school_id)
     .order('due_date', { ascending: false })
 
@@ -63,6 +60,19 @@ export default async function FinancePage({
   const { data: payments, error: payError } = await query
   console.log('[finance] school_id:', profile.school_id, 'count:', payments?.length, 'error:', payError?.message)
   const rows = (payments ?? []) as unknown as PaymentRow[]
+
+  const studentIds = [...new Set(rows.map(r => r.student_id))]
+  const nameMap = new Map<string, string>()
+  if (studentIds.length > 0) {
+    const { data: students } = await admin
+      .from('students')
+      .select('id, profiles!profile_id(full_name)')
+      .in('id', studentIds)
+    for (const s of (students ?? [])) {
+      const name = (s as unknown as { profiles: { full_name: string } }).profiles?.full_name
+      if (name) nameMap.set(s.id, name)
+    }
+  }
 
   return (
     <div>
@@ -100,7 +110,7 @@ export default async function FinancePage({
                 {rows.map(p => (
                   <tr key={p.id} className="border-b border-[#f1f5f9] last:border-0 hover:bg-[#f8fafc] transition">
                     <td className="px-4 py-3 font-medium text-[#0f172a] whitespace-nowrap">
-                      {p.student?.profile?.full_name ?? '—'}
+                      {nameMap.get(p.student_id) ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-[#64748b]">{p.description ?? '—'}</td>
                     <td className="px-4 py-3 text-[#64748b]">{p.reference_month ?? '—'}</td>
