@@ -181,6 +181,28 @@ export async function updateStudent(
   return { error: null }
 }
 
+// ─── delete ─────────────────────────────────────────────────────────────────
+
+export async function deleteStudent(
+  studentId: string,
+  profileId: string,
+): Promise<{ error: string | null }> {
+  const admin = createAdminClient()
+
+  await admin.from('attendances').delete().eq('student_id', studentId)
+  await admin.from('payments').delete().eq('student_id', studentId)
+  await admin.from('enrollments').delete().eq('student_id', studentId)
+  await admin.from('students').delete().eq('id', studentId)
+  await admin.from('profiles').delete().eq('id', profileId)
+
+  const { error } = await admin.auth.admin.deleteUser(profileId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/students')
+  revalidatePath('/admin/finance')
+  return { error: null }
+}
+
 // ─── legacy (AddStudentModal compat) ─────────────────────────────────────────
 
 export async function addStudent(
