@@ -1,12 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { formatCurrency, formatDate } from '@/lib/utils'
 import { DollarSign } from 'lucide-react'
-import { Suspense } from 'react'
-import FinanceFilters from './FinanceFilters'
-import MarkPaidButton from './MarkPaidButton'
+import FinanceTable from './FinanceTable'
 
-type PaymentRow = {
+export type PaymentRow = {
   id: string
   amount_cents: number
   status: string
@@ -17,25 +14,14 @@ type PaymentRow = {
   student_id: string
 }
 
-const statusStyles: Record<string, string> = {
-  PAID:      'bg-emerald-50 text-emerald-700',
-  PENDING:   'bg-amber-50 text-amber-700',
-  OVERDUE:   'bg-red-50 text-red-700',
-  CANCELLED: 'bg-gray-100 text-gray-500',
+export type StudentGroup = {
+  studentId: string
+  studentName: string
+  payments: PaymentRow[]
+  oldestOpen: PaymentRow | null
 }
 
-const statusLabels: Record<string, string> = {
-  PAID:      'Pago',
-  PENDING:   'Pendente',
-  OVERDUE:   'Em atraso',
-  CANCELLED: 'Cancelado',
-}
-
-export default async function FinancePage({
-  searchParams,
-}: {
-  searchParams: { status?: string }
-}) {
+export default async function FinancePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -45,21 +31,15 @@ export default async function FinancePage({
     .from('profiles').select('school_id').eq('id', user.id).single()
   if (!profile?.school_id) return null
 
-  const statusFilter = searchParams.status ?? ''
-
-  let query = admin
+  const { data: payments } = await admin
     .from('payments')
     .select('id, amount_cents, status, due_date, paid_at, reference_month, notes, student_id')
     .eq('school_id', profile.school_id)
-    .order('due_date', { ascending: false })
+    .order('due_date', { ascending: true })
 
-  if (statusFilter) {
-    query = query.eq('status', statusFilter)
-  }
+  const rows = (payments ?? []) as unknown as PaymentRow[]
 
-  const { data: payments } = await query
-const rows = (payments ?? []) as unknown as PaymentRow[]
-
+  // Build student name map
   const studentIds = Array.from(new Set(rows.map(r => r.student_id)))
   const nameMap = new Map<string, string>()
   if (studentIds.length > 0) {
@@ -87,6 +67,34 @@ const rows = (payments ?? []) as unknown as PaymentRow[]
     }
   }
 
+  // Group payments by student
+  const groupMap: Record<string, PaymentRow[]> = {}
+  rows.forEach(p => {
+    if (!groupMap[p.student_id]) groupMap[p.student_id] = []
+    groupMap[p.student_id].push(p)
+  })
+
+  const groups: StudentGroup[] = Object.keys(groupMap).map(sid => {
+    const pmts = groupMap[sid]
+    const oldestOpen = pmts.find(p => p.status === 'PENDING' || p.status === 'OVERDUE') ?? null
+    return {
+      studentId: sid,
+      studentName: nameMap.get(sid) ?? '—',
+      payments: pmts,
+      oldestOpen,
+    }
+  })
+
+  // Students with open payments first, then alphabetical
+  groups.sort((a, b) => {
+    if (a.oldestOpen && !b.oldestOpen) return -1
+    if (!a.oldestOpen && b.oldestOpen) return 1
+    return a.studentName.localeCompare(b.studentName)
+  })
+
+  const totalStudents = groups.length
+  const totalPayments = rows.length
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -94,60 +102,20 @@ const rows = (payments ?? []) as unknown as PaymentRow[]
           <h1 className="text-2xl font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
             Financeiro
           </h1>
-          <p className="text-sm text-[#64748b] mt-1">{rows.length} pagamento{rows.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-[#64748b] mt-1">
+            {totalStudents} aluno{totalStudents !== 1 ? 's' : ''} · {totalPayments} pagamento{totalPayments !== 1 ? 's' : ''}
+          </p>
         </div>
-        <Suspense>
-          <FinanceFilters current={statusFilter} />
-        </Suspense>
       </div>
 
-      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
-        {rows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <DollarSign size={40} className="text-[#e2e8f0] mb-3" />
-            <p className="text-sm text-[#64748b]">Nenhum pagamento encontrado.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#e2e8f0] bg-[#f8fafc]">
-                  {['Aluno', 'Descrição', 'Referência', 'Vencimento', 'Valor', 'Status', ''].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(p => (
-                  <tr key={p.id} className="border-b border-[#f1f5f9] last:border-0 hover:bg-[#f8fafc] transition">
-                    <td className="px-4 py-3 font-medium text-[#0f172a] whitespace-nowrap">
-                      {nameMap.get(p.student_id) ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-[#64748b]">{p.notes ?? '—'}</td>
-                    <td className="px-4 py-3 text-[#64748b]">{p.reference_month ?? '—'}</td>
-                    <td className="px-4 py-3 text-[#64748b] whitespace-nowrap">{formatDate(p.due_date)}</td>
-                    <td className="px-4 py-3 font-medium text-[#0f172a] whitespace-nowrap">
-                      {formatCurrency(p.amount_cents / 100)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusStyles[p.status] ?? 'bg-gray-100 text-gray-500'}`}>
-                        {statusLabels[p.status] ?? p.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {(p.status === 'PENDING' || p.status === 'OVERDUE') && (
-                        <MarkPaidButton paymentId={p.id} />
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {groups.length === 0 ? (
+        <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm flex flex-col items-center justify-center py-16 text-center">
+          <DollarSign size={40} className="text-[#e2e8f0] mb-3" />
+          <p className="text-sm text-[#64748b]">Nenhum pagamento encontrado.</p>
+        </div>
+      ) : (
+        <FinanceTable groups={groups} />
+      )}
     </div>
   )
 }

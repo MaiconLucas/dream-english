@@ -1,15 +1,18 @@
 'use client'
 
 import { useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { markAsPaid } from './actions'
 import { Loader2 } from 'lucide-react'
 
 export default function MarkPaidButton({ paymentId }: { paymentId: string }) {
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   function handleClick() {
     startTransition(async () => {
       await markAsPaid(paymentId)
+      router.refresh()
     })
   }
 
