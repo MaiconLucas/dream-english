@@ -189,14 +189,23 @@ export async function deleteStudent(
 ): Promise<{ error: string | null }> {
   const admin = createAdminClient()
 
-  await admin.from('attendances').delete().eq('student_id', studentId)
-  await admin.from('payments').delete().eq('student_id', studentId)
-  await admin.from('enrollments').delete().eq('student_id', studentId)
-  await admin.from('students').delete().eq('id', studentId)
-  await admin.from('profiles').delete().eq('id', profileId)
+  const { error: e1 } = await admin.from('attendances').delete().eq('student_id', studentId)
+  if (e1) return { error: `attendances: ${e1.message}` }
 
-  const { error } = await admin.auth.admin.deleteUser(profileId)
-  if (error) return { error: error.message }
+  const { error: e2 } = await admin.from('payments').delete().eq('student_id', studentId)
+  if (e2) return { error: `payments: ${e2.message}` }
+
+  const { error: e3 } = await admin.from('enrollments').delete().eq('student_id', studentId)
+  if (e3) return { error: `enrollments: ${e3.message}` }
+
+  const { error: e4 } = await admin.from('students').delete().eq('id', studentId)
+  if (e4) return { error: `students: ${e4.message}` }
+
+  const { error: e5 } = await admin.from('profiles').delete().eq('id', profileId)
+  if (e5) return { error: `profiles: ${e5.message}` }
+
+  const { error: e6 } = await admin.auth.admin.deleteUser(profileId)
+  if (e6) return { error: `auth: ${e6.message}` }
 
   revalidatePath('/admin/students')
   revalidatePath('/admin/finance')
