@@ -115,7 +115,7 @@ export async function createStudent(
 
       console.log('[payments] plan:', plan, 'rows:', paymentRows.length)
       const { error: payError } = await admin.from('payments').insert(paymentRows)
-      console.log('[payments] insert error:', payError)
+      console.log('[payments] insert result:', payError ? payError.message : 'OK')
     }
   }
 
