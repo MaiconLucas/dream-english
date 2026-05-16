@@ -171,6 +171,7 @@ export interface Payment {
   paid_at: string | null
   reference_month: string | null
   notes: string | null
+  reminder_sent_at: string | null
   created_at: string
   updated_at: string
 }

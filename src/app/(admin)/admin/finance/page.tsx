@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DollarSign } from 'lucide-react'
 import FinanceTable from './FinanceTable'
+import SendRemindersButton from './SendRemindersButton'
 
 export type PaymentRow = {
   id: string
@@ -106,6 +107,7 @@ export default async function FinancePage() {
             {totalStudents} aluno{totalStudents !== 1 ? 's' : ''} · {totalPayments} pagamento{totalPayments !== 1 ? 's' : ''}
           </p>
         </div>
+        <SendRemindersButton />
       </div>
 
       {groups.length === 0 ? (
