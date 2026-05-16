@@ -61,7 +61,7 @@ export default async function FinancePage({
   console.log('[finance] school_id:', profile.school_id, 'count:', payments?.length, 'error:', payError?.message)
   const rows = (payments ?? []) as unknown as PaymentRow[]
 
-  const studentIds = [...new Set(rows.map(r => r.student_id))]
+  const studentIds = Array.from(new Set(rows.map(r => r.student_id)))
   const nameMap = new Map<string, string>()
   if (studentIds.length > 0) {
     const { data: students } = await admin
