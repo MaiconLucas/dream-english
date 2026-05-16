@@ -107,11 +107,12 @@ export async function createStudent(
         return {
           school_id: schoolId,
           student_id: student.id,
+          plan_id: planId.trim(),
           amount_cents: priceCents,
           due_date: dueDate,
           status: 'PENDING',
           reference_month: referenceMonth,
-          description: `Mensalidade ${referenceMonth}`,
+          notes: `Mensalidade ${referenceMonth}`,
         }
       })
 

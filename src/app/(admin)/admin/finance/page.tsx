@@ -13,7 +13,7 @@ type PaymentRow = {
   due_date: string
   paid_at: string | null
   reference_month: string | null
-  description: string | null
+  notes: string | null
   student_id: string
 }
 
@@ -49,7 +49,7 @@ export default async function FinancePage({
 
   let query = admin
     .from('payments')
-    .select('id, amount_cents, status, due_date, paid_at, reference_month, description, student_id')
+    .select('id, amount_cents, status, due_date, paid_at, reference_month, notes, student_id')
     .eq('school_id', profile.school_id)
     .order('due_date', { ascending: false })
 
@@ -112,7 +112,7 @@ export default async function FinancePage({
                     <td className="px-4 py-3 font-medium text-[#0f172a] whitespace-nowrap">
                       {nameMap.get(p.student_id) ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-[#64748b]">{p.description ?? '—'}</td>
+                    <td className="px-4 py-3 text-[#64748b]">{p.notes ?? '—'}</td>
                     <td className="px-4 py-3 text-[#64748b]">{p.reference_month ?? '—'}</td>
                     <td className="px-4 py-3 text-[#64748b] whitespace-nowrap">{formatDate(p.due_date)}</td>
                     <td className="px-4 py-3 font-medium text-[#0f172a] whitespace-nowrap">

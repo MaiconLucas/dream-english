@@ -10,7 +10,7 @@ type PaymentRow = {
   due_date: string
   paid_at: string | null
   reference_month: string | null
-  description: string | null
+  notes: string | null
 }
 
 const STATUS: Record<string, { label: string; className: string }> = {
@@ -37,7 +37,7 @@ export default async function StudentFinancePage() {
 
   const { data: raw } = await admin
     .from('payments')
-    .select('id, amount_cents, status, due_date, paid_at, reference_month, description')
+    .select('id, amount_cents, status, due_date, paid_at, reference_month, notes')
     .eq('student_id', student.id)
     .order('due_date', { ascending: false })
 
@@ -107,7 +107,7 @@ export default async function StudentFinancePage() {
                   const s = STATUS[p.status] ?? { label: p.status, className: 'bg-[#f1f5f9] text-[#64748b]' }
                   return (
                     <tr key={p.id} className="border-b border-[#f1f5f9] last:border-0 hover:bg-[#f8fafc] transition">
-                      <td className="px-4 py-3 text-[#0f172a]">{p.description ?? '—'}</td>
+                      <td className="px-4 py-3 text-[#0f172a]">{p.notes ?? '—'}</td>
                       <td className="px-4 py-3 text-[#64748b]">{p.reference_month ?? '—'}</td>
                       <td className="px-4 py-3 text-[#64748b] whitespace-nowrap">{formatDate(p.due_date)}</td>
                       <td className="px-4 py-3 font-medium text-[#0f172a] whitespace-nowrap">{formatCurrency(p.amount_cents / 100)}</td>
