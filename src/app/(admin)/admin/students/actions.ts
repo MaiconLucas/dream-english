@@ -90,8 +90,6 @@ export async function createStudent(
       .eq('id', planId.trim())
       .single()
 
-    console.log('[payments] plan fetch:', plan, 'planError:', planError?.message)
-
     if (plan) {
       const dueDay = (plan as unknown as { price_cents: number; due_day: number | null }).due_day ?? 10
       const priceCents = (plan as unknown as { price_cents: number }).price_cents
@@ -116,9 +114,7 @@ export async function createStudent(
         }
       })
 
-      console.log('[payments] rows to insert:', paymentRows.length, 'first:', paymentRows[0])
-      const { error: payError } = await admin.from('payments').insert(paymentRows)
-      console.log('[payments] insert result:', payError ? payError.message : 'OK')
+      await admin.from('payments').insert(paymentRows)
     }
   }
 
