@@ -60,7 +60,8 @@ export default async function FinancePage({
     query = query.eq('status', statusFilter)
   }
 
-  const { data: payments } = await query
+  const { data: payments, error: payError } = await query
+  console.log('[finance] school_id:', profile.school_id, 'count:', payments?.length, 'error:', payError?.message)
   const rows = (payments ?? []) as unknown as PaymentRow[]
 
   return (
