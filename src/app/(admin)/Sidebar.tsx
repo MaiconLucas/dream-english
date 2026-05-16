@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, GraduationCap, BookOpen, DollarSign, LogOut, BookMarked, Tag } from 'lucide-react'
+import { LayoutDashboard, Users, GraduationCap, BookOpen, DollarSign, LogOut, BookMarked } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 
 const navItems = [
@@ -11,7 +11,6 @@ const navItems = [
   { href: '/admin/teachers', label: 'Professores', icon: GraduationCap },
   { href: '/admin/classes', label: 'Turmas', icon: BookOpen },
   { href: '/admin/course', label: 'Conteúdo', icon: BookMarked },
-  { href: '/admin/plans', label: 'Planos', icon: Tag },
   { href: '/admin/finance', label: 'Financeiro', icon: DollarSign },
 ]
 

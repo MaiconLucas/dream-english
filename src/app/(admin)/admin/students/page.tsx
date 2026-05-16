@@ -9,8 +9,9 @@ export type StudentListItem = {
   level: string | null
   created_at: string
   profile_id: string
+  monthly_fee_cents: number
+  discount_percent:  number
   profiles: { full_name: string; email: string; active: boolean } | null
-  plans: { name: string } | null
   enrollments: Array<{ status: string; classes: { name: string } | null }> | null
 }
 
@@ -34,8 +35,9 @@ export default async function StudentsPage() {
       level,
       created_at,
       profile_id,
+      monthly_fee_cents,
+      discount_percent,
       profiles!profile_id(full_name, email, active),
-      plans!plan_id(name),
       enrollments!student_id(status, classes!class_id(name))
     `)
     .eq('school_id', myProfile.school_id)

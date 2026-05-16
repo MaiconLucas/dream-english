@@ -7,14 +7,16 @@ import { z } from 'zod'
 // ─── create ─────────────────────────────────────────────────────────────────
 
 const createSchema = z.object({
-  fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  phone: z.string(),
-  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  planId: z.string(),
-  classId: z.string(),
-  level: z.string(),
-  schoolId: z.string().min(1),
+  fullName:        z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  email:           z.string().email('Email inválido'),
+  phone:           z.string(),
+  password:        z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+  classId:         z.string(),
+  level:           z.string(),
+  schoolId:        z.string().min(1),
+  monthlyFeeCents: z.number().int().min(0),
+  discountPercent: z.number().min(0).max(100),
+  dueDay:          z.number().int().min(1).max(28),
 })
 
 export type CreateStudentInput = z.infer<typeof createSchema>
@@ -25,7 +27,8 @@ export async function createStudent(
   const parsed = createSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
 
-  const { fullName, email, phone, password, planId, classId, level, schoolId } = parsed.data
+  const { fullName, email, phone, password, classId, level, schoolId,
+          monthlyFeeCents, discountPercent, dueDay } = parsed.data
   const admin = createAdminClient()
 
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
@@ -61,10 +64,12 @@ export async function createStudent(
   const { data: student, error: studentError } = await admin
     .from('students')
     .insert({
-      profile_id: userId,
-      school_id: schoolId,
-      plan_id: planId.trim() || null,
-      level: level.trim() || null,
+      profile_id:       userId,
+      school_id:        schoolId,
+      level:            level.trim() || null,
+      monthly_fee_cents: monthlyFeeCents,
+      discount_percent:  discountPercent,
+      due_day:           dueDay,
     })
     .select('id')
     .single()
@@ -76,46 +81,37 @@ export async function createStudent(
 
   if (classId.trim()) {
     await admin.from('enrollments').insert({
-      school_id: schoolId,
+      school_id:  schoolId,
       student_id: student.id,
-      class_id: classId.trim(),
-      status: 'ACTIVE',
+      class_id:   classId.trim(),
+      status:     'ACTIVE',
     })
   }
 
-  if (planId.trim()) {
-    const { data: plan } = await admin
-      .from('plans')
-      .select('price_cents, due_day')
-      .eq('id', planId.trim())
-      .single()
+  // Generate 12 months of payments using the final amount after discount
+  if (monthlyFeeCents > 0) {
+    const finalAmountCents = Math.round(monthlyFeeCents * (1 - discountPercent / 100))
+    const now = new Date()
 
-    if (plan) {
-      const dueDay = (plan as unknown as { price_cents: number; due_day: number | null }).due_day ?? 10
-      const priceCents = (plan as unknown as { price_cents: number }).price_cents
-      const now = new Date()
+    const paymentRows = Array.from({ length: 12 }, (_, i) => {
+      const year  = now.getFullYear() + Math.floor((now.getMonth() + i) / 12)
+      const month = (now.getMonth() + i) % 12
+      const lastDay = new Date(year, month + 1, 0).getDate()
+      const day   = Math.min(dueDay, lastDay)
+      const dueDate        = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      const referenceMonth = `${year}-${String(month + 1).padStart(2, '0')}`
+      return {
+        school_id:       schoolId,
+        student_id:      student.id,
+        amount_cents:    finalAmountCents,
+        due_date:        dueDate,
+        status:          'PENDING',
+        reference_month: referenceMonth,
+        notes:           `Mensalidade ${referenceMonth}`,
+      }
+    })
 
-      const paymentRows = Array.from({ length: 12 }, (_, i) => {
-        const year = now.getFullYear() + Math.floor((now.getMonth() + i) / 12)
-        const month = (now.getMonth() + i) % 12
-        const lastDay = new Date(year, month + 1, 0).getDate()
-        const day = Math.min(dueDay, lastDay)
-        const dueDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-        const referenceMonth = `${year}-${String(month + 1).padStart(2, '0')}`
-        return {
-          school_id: schoolId,
-          student_id: student.id,
-          plan_id: planId.trim(),
-          amount_cents: priceCents,
-          due_date: dueDate,
-          status: 'PENDING',
-          reference_month: referenceMonth,
-          notes: `Mensalidade ${referenceMonth}`,
-        }
-      })
-
-      await admin.from('payments').insert(paymentRows)
-    }
+    await admin.from('payments').insert(paymentRows)
   }
 
   revalidatePath('/admin/students')
@@ -126,12 +122,14 @@ export async function createStudent(
 // ─── update ─────────────────────────────────────────────────────────────────
 
 const updateSchema = z.object({
-  fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  phone: z.string(),
-  planId: z.string(),
-  classId: z.string(),
-  level: z.string(),
-  active: z.boolean(),
+  fullName:        z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  phone:           z.string(),
+  classId:         z.string(),
+  level:           z.string(),
+  active:          z.boolean(),
+  monthlyFeeCents: z.number().int().min(0),
+  discountPercent: z.number().min(0).max(100),
+  dueDay:          z.number().int().min(1).max(28),
 })
 
 export type UpdateStudentInput = z.infer<typeof updateSchema>
@@ -145,7 +143,8 @@ export async function updateStudent(
   const parsed = updateSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
 
-  const { fullName, phone, planId, classId, level, active } = parsed.data
+  const { fullName, phone, classId, level, active,
+          monthlyFeeCents, discountPercent, dueDay } = parsed.data
   const admin = createAdminClient()
 
   const [pr, sr] = await Promise.all([
@@ -155,7 +154,12 @@ export async function updateStudent(
       .eq('id', profileId),
     admin
       .from('students')
-      .update({ plan_id: planId.trim() || null, level: level.trim() || null })
+      .update({
+        level:             level.trim() || null,
+        monthly_fee_cents: monthlyFeeCents,
+        discount_percent:  discountPercent,
+        due_day:           dueDay,
+      })
       .eq('id', studentId),
   ])
 
@@ -210,21 +214,4 @@ export async function deleteStudent(
   revalidatePath('/admin/students')
   revalidatePath('/admin/finance')
   return { error: null }
-}
-
-// ─── legacy (AddStudentModal compat) ─────────────────────────────────────────
-
-export async function addStudent(
-  formData: FormData
-): Promise<{ error: string | null; studentId?: string }> {
-  return createStudent({
-    fullName: (formData.get('fullName') as string) ?? '',
-    email: (formData.get('email') as string) ?? '',
-    phone: (formData.get('phone') as string) ?? '',
-    password: (formData.get('password') as string) ?? '',
-    planId: (formData.get('planId') as string) ?? '',
-    classId: (formData.get('classId') as string) ?? '',
-    level: (formData.get('level') as string) ?? '',
-    schoolId: (formData.get('schoolId') as string) ?? '',
-  })
 }

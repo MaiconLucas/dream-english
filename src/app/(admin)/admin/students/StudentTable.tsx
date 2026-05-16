@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatCurrency } from '@/lib/utils'
 import { Users, Search, Pencil } from 'lucide-react'
 import type { StudentListItem } from './page'
 import DeleteStudentButton from './DeleteStudentButton'
@@ -56,7 +56,7 @@ export default function StudentTable({ students }: { students: StudentListItem[]
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#e2e8f0] bg-[#f8fafc]">
-                  {['Nome', 'Email', 'Turma', 'Plano', 'Status', 'Matrícula', ''].map((h) => (
+                  {['Nome', 'Email', 'Turma', 'Mensalidade', 'Status', 'Matrícula', ''].map((h) => (
                     <th
                       key={h}
                       className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap"
@@ -68,10 +68,12 @@ export default function StudentTable({ students }: { students: StudentListItem[]
               </thead>
               <tbody>
                 {filtered.map((s) => {
-                  const profile = resolveOne(s.profiles)
-                  const plan = resolveOne(s.plans)
-                  const className = getClassName(s.enrollments)
-                  const active = profile?.active ?? false
+                  const profile    = resolveOne(s.profiles)
+                  const className  = getClassName(s.enrollments)
+                  const active     = profile?.active ?? false
+                  const finalCents = Math.round(
+                    (s.monthly_fee_cents ?? 0) * (1 - (s.discount_percent ?? 0) / 100)
+                  )
 
                   return (
                     <tr
@@ -88,7 +90,9 @@ export default function StudentTable({ students }: { students: StudentListItem[]
                       </td>
                       <td className="px-4 py-3 text-[#64748b]">{profile?.email ?? '—'}</td>
                       <td className="px-4 py-3 text-[#64748b]">{className}</td>
-                      <td className="px-4 py-3 text-[#64748b]">{plan?.name ?? '—'}</td>
+                      <td className="px-4 py-3 text-[#64748b] whitespace-nowrap">
+                        {finalCents > 0 ? formatCurrency(finalCents / 100) : '—'}
+                      </td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${

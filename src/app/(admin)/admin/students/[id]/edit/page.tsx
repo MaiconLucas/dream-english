@@ -19,18 +19,17 @@ export default async function EditStudentPage({ params }: { params: { id: string
     .single()
   if (!myProfile) return null
 
-  const [{ data: student }, { data: plans }, { data: classes }] = await Promise.all([
+  const [{ data: student }, { data: classes }] = await Promise.all([
     admin
       .from('students')
       .select(`
-        id, level, profile_id, plan_id,
+        id, level, profile_id, monthly_fee_cents, discount_percent, due_day,
         profiles!profile_id(full_name, email, phone, active),
         enrollments!student_id(status, class_id, classes!class_id(name))
       `)
       .eq('id', params.id)
       .eq('school_id', myProfile.school_id)
       .single(),
-    admin.from('plans').select('id, name').eq('school_id', myProfile.school_id).order('name'),
     admin.from('classes').select('id, name').eq('school_id', myProfile.school_id).order('name'),
   ])
 
@@ -63,15 +62,16 @@ export default async function EditStudentPage({ params }: { params: { id: string
         studentId={params.id}
         profileId={student.profile_id}
         schoolId={myProfile.school_id}
-        plans={plans ?? []}
         classes={classes ?? []}
         defaults={{
-          fullName: profile?.full_name ?? '',
-          phone: profile?.phone ?? '',
-          planId: student.plan_id ?? '',
-          classId: activeEnrollment?.class_id ?? '',
-          level: student.level ?? '',
-          active: profile?.active ?? true,
+          fullName:        profile?.full_name ?? '',
+          phone:           profile?.phone ?? '',
+          classId:         activeEnrollment?.class_id ?? '',
+          level:           student.level ?? '',
+          active:          profile?.active ?? true,
+          monthlyFee:      ((student.monthly_fee_cents as number) ?? 0) / 100,
+          discountPercent: (student.discount_percent as number) ?? 0,
+          dueDay:          (student.due_day as number) ?? 10,
         }}
       />
     </div>

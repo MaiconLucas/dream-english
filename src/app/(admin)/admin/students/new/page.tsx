@@ -18,18 +18,11 @@ export default async function NewStudentPage() {
     .single()
   if (!myProfile) return null
 
-  const [{ data: plans }, { data: classes }] = await Promise.all([
-    admin
-      .from('plans')
-      .select('id, name, price_cents, due_day')
-      .eq('school_id', myProfile.school_id)
-      .order('name'),
-    admin
-      .from('classes')
-      .select('id, name')
-      .eq('school_id', myProfile.school_id)
-      .order('name'),
-  ])
+  const { data: classes } = await admin
+    .from('classes')
+    .select('id, name')
+    .eq('school_id', myProfile.school_id)
+    .order('name')
 
   return (
     <div>
@@ -51,7 +44,6 @@ export default async function NewStudentPage() {
       </div>
 
       <NewStudentForm
-        plans={plans ?? []}
         classes={classes ?? []}
         schoolId={myProfile.school_id}
       />

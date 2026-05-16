@@ -1,6 +1,6 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
@@ -8,12 +8,14 @@ import { useState } from 'react'
 import { updateStudent } from '../../actions'
 
 const schema = z.object({
-  fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  phone: z.string(),
-  planId: z.string(),
-  classId: z.string(),
-  level: z.string(),
-  active: z.boolean(),
+  fullName:        z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  phone:           z.string(),
+  classId:         z.string(),
+  level:           z.string(),
+  active:          z.boolean(),
+  monthlyFee:      z.number().min(0),
+  discountPercent: z.number().min(0, 'Mínimo 0%').max(100, 'Máximo 100%'),
+  dueDay:          z.number().int().min(1, 'Mínimo dia 1').max(28, 'Máximo dia 28'),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -21,15 +23,18 @@ type FormValues = z.infer<typeof schema>
 type Props = {
   studentId: string
   profileId: string
-  schoolId: string
-  plans: { id: string; name: string }[]
-  classes: { id: string; name: string }[]
-  defaults: FormValues
+  schoolId:  string
+  classes:   { id: string; name: string }[]
+  defaults:  FormValues
 }
 
 const LEVELS = ['Beginner', 'Elementary', 'Pre-Intermediate', 'Intermediate', 'Upper-Intermediate', 'Advanced']
 
-export default function EditStudentForm({ studentId, profileId, schoolId, plans, classes, defaults }: Props) {
+function formatBRL(value: number) {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+export default function EditStudentForm({ studentId, profileId, schoolId, classes, defaults }: Props) {
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -37,15 +42,29 @@ export default function EditStudentForm({ studentId, profileId, schoolId, plans,
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: defaults,
   })
 
+  const monthlyFee      = useWatch({ control, name: 'monthlyFee' }) ?? 0
+  const discountPercent = useWatch({ control, name: 'discountPercent' }) ?? 0
+  const finalAmount     = monthlyFee * (1 - discountPercent / 100)
+
   async function onSubmit(values: FormValues) {
     setServerError(null)
-    const result = await updateStudent(studentId, profileId, schoolId, values)
+    const result = await updateStudent(studentId, profileId, schoolId, {
+      fullName:        values.fullName,
+      phone:           values.phone,
+      classId:         values.classId,
+      level:           values.level,
+      active:          values.active,
+      monthlyFeeCents: Math.round(values.monthlyFee * 100),
+      discountPercent: values.discountPercent,
+      dueDay:          values.dueDay,
+    })
     if (result.error) {
       setServerError(result.error)
       return
@@ -68,6 +87,7 @@ export default function EditStudentForm({ studentId, profileId, schoolId, plans,
         </div>
       )}
 
+      {/* Dados pessoais */}
       <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-6 space-y-5">
         <h2 className="text-sm font-semibold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
           Dados pessoais
@@ -92,21 +112,68 @@ export default function EditStudentForm({ studentId, profileId, schoolId, plans,
         </div>
       </div>
 
+      {/* Mensalidade */}
+      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-6 space-y-5">
+        <h2 className="text-sm font-semibold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+          Mensalidade
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <Field label="Valor (R$)" error={errors.monthlyFee?.message}>
+            <input
+              {...register('monthlyFee', { valueAsNumber: true })}
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0,00"
+              className={inputCls(!!errors.monthlyFee)}
+            />
+          </Field>
+
+          <Field label="Desconto (%)" error={errors.discountPercent?.message}>
+            <input
+              {...register('discountPercent', { valueAsNumber: true })}
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              placeholder="0"
+              className={inputCls(!!errors.discountPercent)}
+            />
+          </Field>
+
+          <Field label="Dia de vencimento" error={errors.dueDay?.message}>
+            <input
+              {...register('dueDay', { valueAsNumber: true })}
+              type="number"
+              min="1"
+              max="28"
+              step="1"
+              placeholder="10"
+              className={inputCls(!!errors.dueDay)}
+            />
+          </Field>
+        </div>
+
+        {monthlyFee > 0 && (
+          <div className="flex items-center justify-between rounded-lg bg-[#f8fafc] border border-[#e2e8f0] px-4 py-3">
+            <span className="text-xs text-[#64748b]">
+              Valor final após desconto de {discountPercent}%
+            </span>
+            <span className="text-base font-semibold text-[#1a56db]">
+              {formatBRL(finalAmount)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Matrícula */}
       <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-6 space-y-5">
         <h2 className="text-sm font-semibold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
           Matrícula
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label="Plano" error={errors.planId?.message}>
-            <select {...register('planId')} className={inputCls(!!errors.planId)}>
-              <option value="">Sem plano</option>
-              {plans.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </Field>
-
           <Field label="Turma" error={errors.classId?.message}>
             <select {...register('classId')} className={inputCls(!!errors.classId)}>
               <option value="">Sem turma</option>
@@ -115,16 +182,16 @@ export default function EditStudentForm({ studentId, profileId, schoolId, plans,
               ))}
             </select>
           </Field>
-        </div>
 
-        <Field label="Nível" error={errors.level?.message}>
-          <select {...register('level')} className={inputCls(!!errors.level)}>
-            <option value="">Selecionar nível</option>
-            {LEVELS.map((l) => (
-              <option key={l} value={l}>{l}</option>
-            ))}
-          </select>
-        </Field>
+          <Field label="Nível" error={errors.level?.message}>
+            <select {...register('level')} className={inputCls(!!errors.level)}>
+              <option value="">Selecionar nível</option>
+              {LEVELS.map((l) => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

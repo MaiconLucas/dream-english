@@ -58,10 +58,12 @@ export interface Student {
   id: string
   profile_id: string
   school_id: string
-  plan_id: string | null
   enrollment_number: string | null
   level: string | null
   notes: string | null
+  monthly_fee_cents: number
+  discount_percent: number
+  due_day: number
   created_at: string
   updated_at: string
 }

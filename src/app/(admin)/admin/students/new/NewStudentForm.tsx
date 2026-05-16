@@ -1,6 +1,6 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
@@ -8,43 +8,66 @@ import { useState } from 'react'
 import { createStudent } from '../actions'
 
 const schema = z.object({
-  fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  phone: z.string(),
-  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  planId: z.string(),
-  classId: z.string(),
-  level: z.string(),
+  fullName:        z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  email:           z.string().email('Email inválido'),
+  phone:           z.string(),
+  password:        z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+  classId:         z.string(),
+  level:           z.string(),
+  monthlyFee:      z.number().min(0),
+  discountPercent: z.number().min(0, 'Mínimo 0%').max(100, 'Máximo 100%'),
+  dueDay:          z.number().int().min(1, 'Mínimo dia 1').max(28, 'Máximo dia 28'),
 })
 
 type FormValues = z.infer<typeof schema>
 
-type Plan = { id: string; name: string; price_cents: number; due_day: number | null }
-
 type Props = {
-  plans: Plan[]
   classes: { id: string; name: string }[]
   schoolId: string
 }
 
 const LEVELS = ['Beginner', 'Elementary', 'Pre-Intermediate', 'Intermediate', 'Upper-Intermediate', 'Advanced']
 
-export default function NewStudentForm({ plans, classes, schoolId }: Props) {
+function formatBRL(value: number) {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+export default function NewStudentForm({ classes, schoolId }: Props) {
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { fullName: '', email: '', phone: '', password: '', planId: '', classId: '', level: '' },
+    defaultValues: {
+      fullName: '', email: '', phone: '', password: '',
+      classId: '', level: '',
+      monthlyFee: 0, discountPercent: 0, dueDay: 10,
+    },
   })
+
+  const monthlyFee      = useWatch({ control, name: 'monthlyFee' }) ?? 0
+  const discountPercent = useWatch({ control, name: 'discountPercent' }) ?? 0
+  const finalAmount     = monthlyFee * (1 - discountPercent / 100)
 
   async function onSubmit(values: FormValues) {
     setServerError(null)
-    const result = await createStudent({ ...values, schoolId })
+    const result = await createStudent({
+      fullName:        values.fullName,
+      email:           values.email,
+      phone:           values.phone,
+      password:        values.password,
+      classId:         values.classId,
+      level:           values.level,
+      schoolId,
+      monthlyFeeCents: Math.round(values.monthlyFee * 100),
+      discountPercent: values.discountPercent,
+      dueDay:          values.dueDay,
+    })
     if (result.error) {
       setServerError(result.error)
       return
@@ -61,6 +84,7 @@ export default function NewStudentForm({ plans, classes, schoolId }: Props) {
         </div>
       )}
 
+      {/* Dados pessoais */}
       <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-6 space-y-5">
         <h2 className="text-sm font-semibold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
           Dados pessoais
@@ -84,7 +108,6 @@ export default function NewStudentForm({ plans, classes, schoolId }: Props) {
               className={inputCls(!!errors.email)}
             />
           </Field>
-
           <Field label="Telefone" error={errors.phone?.message}>
             <input
               {...register('phone')}
@@ -105,23 +128,68 @@ export default function NewStudentForm({ plans, classes, schoolId }: Props) {
         </Field>
       </div>
 
+      {/* Mensalidade */}
+      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-6 space-y-5">
+        <h2 className="text-sm font-semibold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+          Mensalidade
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <Field label="Valor (R$)" error={errors.monthlyFee?.message}>
+            <input
+              {...register('monthlyFee', { valueAsNumber: true })}
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0,00"
+              className={inputCls(!!errors.monthlyFee)}
+            />
+          </Field>
+
+          <Field label="Desconto (%)" error={errors.discountPercent?.message}>
+            <input
+              {...register('discountPercent', { valueAsNumber: true })}
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              placeholder="0"
+              className={inputCls(!!errors.discountPercent)}
+            />
+          </Field>
+
+          <Field label="Dia de vencimento" error={errors.dueDay?.message}>
+            <input
+              {...register('dueDay', { valueAsNumber: true })}
+              type="number"
+              min="1"
+              max="28"
+              step="1"
+              placeholder="10"
+              className={inputCls(!!errors.dueDay)}
+            />
+          </Field>
+        </div>
+
+        {monthlyFee > 0 && (
+          <div className="flex items-center justify-between rounded-lg bg-[#f8fafc] border border-[#e2e8f0] px-4 py-3">
+            <span className="text-xs text-[#64748b]">
+              Valor final após desconto de {discountPercent}%
+            </span>
+            <span className="text-base font-semibold text-[#1a56db]">
+              {formatBRL(finalAmount)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Matrícula */}
       <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-6 space-y-5">
         <h2 className="text-sm font-semibold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
           Matrícula
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label="Plano" error={errors.planId?.message}>
-            <select {...register('planId')} className={inputCls(!!errors.planId)}>
-              <option value="">Selecionar plano</option>
-              {plans.map((p) => {
-                const price = (p.price_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                const day = p.due_day ? ` — vence dia ${p.due_day}` : ''
-                return <option key={p.id} value={p.id}>{p.name} — {price}{day}</option>
-              })}
-            </select>
-          </Field>
-
           <Field label="Turma" error={errors.classId?.message}>
             <select {...register('classId')} className={inputCls(!!errors.classId)}>
               <option value="">Selecionar turma</option>
@@ -130,16 +198,16 @@ export default function NewStudentForm({ plans, classes, schoolId }: Props) {
               ))}
             </select>
           </Field>
-        </div>
 
-        <Field label="Nível" error={errors.level?.message}>
-          <select {...register('level')} className={inputCls(!!errors.level)}>
-            <option value="">Selecionar nível</option>
-            {LEVELS.map((l) => (
-              <option key={l} value={l}>{l}</option>
-            ))}
-          </select>
-        </Field>
+          <Field label="Nível" error={errors.level?.message}>
+            <select {...register('level')} className={inputCls(!!errors.level)}>
+              <option value="">Selecionar nível</option>
+              {LEVELS.map((l) => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

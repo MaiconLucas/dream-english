@@ -52,9 +52,8 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
   const { data: student } = await admin
     .from('students')
     .select(`
-      id, level, created_at, profile_id, plan_id,
+      id, level, created_at, profile_id, monthly_fee_cents, discount_percent, due_day,
       profiles!profile_id(full_name, email, phone, active),
-      plans!plan_id(name),
       enrollments!student_id(status, classes!class_id(name))
     `)
     .eq('id', params.id)
@@ -64,7 +63,6 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
   if (!student) notFound()
 
   const profile = Array.isArray(student.profiles) ? student.profiles[0] : student.profiles
-  const plan = Array.isArray(student.plans) ? student.plans[0] : student.plans
   const enrollments = (student.enrollments ?? []) as Array<{ status: string; classes: { name: string } | { name: string }[] | null }>
   const activeEnrollment = enrollments.find((e) => e.status === 'ACTIVE') ?? enrollments[0]
   const activeClass = activeEnrollment
@@ -174,7 +172,16 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
               <InfoRow icon={<Phone size={14} />} value={profile?.phone ?? '—'} />
               <InfoRow icon={<BookOpen size={14} />} value={`Nível: ${student.level ?? '—'}`} />
               <InfoRow icon={<Calendar size={14} />} value={`Turma: ${activeClass?.name ?? '—'}`} />
-              <InfoRow icon={<CreditCard size={14} />} value={`Plano: ${plan?.name ?? '—'}`} />
+              <InfoRow
+                icon={<CreditCard size={14} />}
+                value={`Mensalidade: ${
+                  (student.monthly_fee_cents as number) > 0
+                    ? formatCurrency(
+                        Math.round((student.monthly_fee_cents as number) * (1 - (student.discount_percent as number) / 100)) / 100
+                      )
+                    : '—'
+                }`}
+              />
             </div>
           </div>
         </div>
