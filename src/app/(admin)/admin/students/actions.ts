@@ -84,7 +84,7 @@ export async function createStudent(
   }
 
   if (planId.trim()) {
-    const { data: plan, error: planError } = await admin
+    const { data: plan } = await admin
       .from('plans')
       .select('price_cents, due_day')
       .eq('id', planId.trim())

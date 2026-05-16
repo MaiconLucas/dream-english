@@ -57,7 +57,7 @@ export default async function FinancePage({
     query = query.eq('status', statusFilter)
   }
 
-  const { data: payments, error: payError } = await query
+  const { data: payments } = await query
 const rows = (payments ?? []) as unknown as PaymentRow[]
 
   const studentIds = Array.from(new Set(rows.map(r => r.student_id)))
