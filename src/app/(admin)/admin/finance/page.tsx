@@ -63,13 +63,25 @@ const rows = (payments ?? []) as unknown as PaymentRow[]
   const studentIds = Array.from(new Set(rows.map(r => r.student_id)))
   const nameMap = new Map<string, string>()
   if (studentIds.length > 0) {
-    const { data: students } = await admin
+    const { data: studentRows } = await admin
       .from('students')
-      .select('id, profiles!profile_id(full_name)')
+      .select('id, profile_id')
       .in('id', studentIds)
-    for (const s of (students ?? [])) {
-      const name = (s as unknown as { profiles: { full_name: string } }).profiles?.full_name
-      if (name) nameMap.set(s.id, name)
+
+    const profileIds = Array.from(new Set((studentRows ?? []).map(s => s.profile_id as string).filter(Boolean)))
+    const studentToProfile = new Map<string, string>((studentRows ?? []).map(s => [s.id as string, s.profile_id as string]))
+
+    if (profileIds.length > 0) {
+      const { data: profileRows } = await admin
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', profileIds)
+
+      const profileNameMap = new Map<string, string>((profileRows ?? []).map(p => [p.id as string, (p.full_name ?? '') as string]))
+      for (const [sid, pid] of studentToProfile) {
+        const name = profileNameMap.get(pid)
+        if (name) nameMap.set(sid, name)
+      }
     }
   }
 
