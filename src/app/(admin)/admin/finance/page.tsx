@@ -40,12 +40,12 @@ export default async function FinancePage({
   searchParams: { status?: string }
 }) {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.user) return null
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
 
   const admin = createAdminClient()
   const { data: profile } = await admin
-    .from('profiles').select('school_id').eq('id', session.user.id).single()
+    .from('profiles').select('school_id').eq('id', user.id).single()
   if (!profile?.school_id) return null
 
   const statusFilter = searchParams.status ?? ''
