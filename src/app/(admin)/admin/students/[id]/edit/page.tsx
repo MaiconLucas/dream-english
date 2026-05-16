@@ -23,7 +23,7 @@ export default async function EditStudentPage({ params }: { params: { id: string
     admin
       .from('students')
       .select(`
-        id, level, profile_id, monthly_fee_cents, discount_percent, due_day,
+        id, level, profile_id, monthly_fee_cents, discount_percent, first_due_date,
         profiles!profile_id(full_name, email, phone, active),
         enrollments!student_id(status, class_id, classes!class_id(name))
       `)
@@ -71,7 +71,7 @@ export default async function EditStudentPage({ params }: { params: { id: string
           active:          profile?.active ?? true,
           monthlyFee:      ((student.monthly_fee_cents as number) ?? 0) / 100,
           discountPercent: (student.discount_percent as number) ?? 0,
-          dueDay:          (student.due_day as number) ?? 10,
+          firstDueDate:    (student.first_due_date as string) ?? '',
         }}
       />
     </div>

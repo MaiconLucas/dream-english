@@ -16,7 +16,7 @@ const schema = z.object({
   level:           z.string(),
   monthlyFee:      z.number().min(0),
   discountPercent: z.number().min(0, 'Mínimo 0%').max(100, 'Máximo 100%'),
-  dueDay:          z.number().int().min(1, 'Mínimo dia 1').max(28, 'Máximo dia 28'),
+  firstDueDate:    z.string().min(1, 'Informe a data do 1° vencimento'),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -46,7 +46,7 @@ export default function NewStudentForm({ classes, schoolId }: Props) {
     defaultValues: {
       fullName: '', email: '', phone: '', password: '',
       classId: '', level: '',
-      monthlyFee: 0, discountPercent: 0, dueDay: 10,
+      monthlyFee: 0, discountPercent: 0, firstDueDate: '',
     },
   })
 
@@ -66,7 +66,7 @@ export default function NewStudentForm({ classes, schoolId }: Props) {
       schoolId,
       monthlyFeeCents: Math.round(values.monthlyFee * 100),
       discountPercent: values.discountPercent,
-      dueDay:          values.dueDay,
+      firstDueDate:    values.firstDueDate,
     })
     if (result.error) {
       setServerError(result.error)
@@ -158,15 +158,11 @@ export default function NewStudentForm({ classes, schoolId }: Props) {
             />
           </Field>
 
-          <Field label="Dia de vencimento" error={errors.dueDay?.message}>
+          <Field label="1° Vencimento" error={errors.firstDueDate?.message}>
             <input
-              {...register('dueDay', { valueAsNumber: true })}
-              type="number"
-              min="1"
-              max="28"
-              step="1"
-              placeholder="10"
-              className={inputCls(!!errors.dueDay)}
+              {...register('firstDueDate')}
+              type="date"
+              className={inputCls(!!errors.firstDueDate)}
             />
           </Field>
         </div>

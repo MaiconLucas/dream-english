@@ -16,7 +16,7 @@ const createSchema = z.object({
   schoolId:        z.string().min(1),
   monthlyFeeCents: z.number().int().min(0),
   discountPercent: z.number().min(0).max(100),
-  dueDay:          z.number().int().min(1).max(28),
+  firstDueDate:    z.string().min(1, 'Informe a data do 1° vencimento'),
 })
 
 export type CreateStudentInput = z.infer<typeof createSchema>
@@ -28,7 +28,7 @@ export async function createStudent(
   if (!parsed.success) return { error: parsed.error.issues[0].message }
 
   const { fullName, email, phone, password, classId, level, schoolId,
-          monthlyFeeCents, discountPercent, dueDay } = parsed.data
+          monthlyFeeCents, discountPercent, firstDueDate } = parsed.data
   const admin = createAdminClient()
 
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
@@ -66,10 +66,10 @@ export async function createStudent(
     .insert({
       profile_id:       userId,
       school_id:        schoolId,
-      level:            level.trim() || null,
+      level:             level.trim() || null,
       monthly_fee_cents: monthlyFeeCents,
       discount_percent:  discountPercent,
-      due_day:           dueDay,
+      first_due_date:    firstDueDate,
     })
     .select('id')
     .single()
@@ -88,16 +88,19 @@ export async function createStudent(
     })
   }
 
-  // Generate 12 months of payments using the final amount after discount
+  // Generate 12 payments: first on firstDueDate, then +1 month each
   if (monthlyFeeCents > 0) {
     const finalAmountCents = Math.round(monthlyFeeCents * (1 - discountPercent / 100))
-    const now = new Date()
+    const base = new Date(firstDueDate + 'T12:00:00Z')
+    const baseDay   = base.getUTCDate()
+    const baseMonth = base.getUTCMonth()
+    const baseYear  = base.getUTCFullYear()
 
     const paymentRows = Array.from({ length: 12 }, (_, i) => {
-      const year  = now.getFullYear() + Math.floor((now.getMonth() + i) / 12)
-      const month = (now.getMonth() + i) % 12
-      const lastDay = new Date(year, month + 1, 0).getDate()
-      const day   = Math.min(dueDay, lastDay)
+      const year    = baseYear + Math.floor((baseMonth + i) / 12)
+      const month   = (baseMonth + i) % 12
+      const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+      const day     = Math.min(baseDay, lastDay)
       const dueDate        = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
       const referenceMonth = `${year}-${String(month + 1).padStart(2, '0')}`
       return {
@@ -129,7 +132,7 @@ const updateSchema = z.object({
   active:          z.boolean(),
   monthlyFeeCents: z.number().int().min(0),
   discountPercent: z.number().min(0).max(100),
-  dueDay:          z.number().int().min(1).max(28),
+  firstDueDate:    z.string(),
 })
 
 export type UpdateStudentInput = z.infer<typeof updateSchema>
@@ -144,7 +147,7 @@ export async function updateStudent(
   if (!parsed.success) return { error: parsed.error.issues[0].message }
 
   const { fullName, phone, classId, level, active,
-          monthlyFeeCents, discountPercent, dueDay } = parsed.data
+          monthlyFeeCents, discountPercent, firstDueDate } = parsed.data
   const admin = createAdminClient()
 
   const [pr, sr] = await Promise.all([
@@ -158,7 +161,7 @@ export async function updateStudent(
         level:             level.trim() || null,
         monthly_fee_cents: monthlyFeeCents,
         discount_percent:  discountPercent,
-        due_day:           dueDay,
+        first_due_date:    firstDueDate || null,
       })
       .eq('id', studentId),
   ])
