@@ -196,8 +196,8 @@ export async function deleteStudent(
 ): Promise<{ error: string | null }> {
   const admin = createAdminClient()
 
-  const { error: e1 } = await admin.from('attendances').delete().eq('student_id', studentId)
-  if (e1) return { error: `attendances: ${e1.message}` }
+  const { error: e1 } = await admin.from('attendance').delete().eq('student_id', studentId)
+  if (e1) return { error: `attendance: ${e1.message}` }
 
   const { error: e2 } = await admin.from('payments').delete().eq('student_id', studentId)
   if (e2) return { error: `payments: ${e2.message}` }
