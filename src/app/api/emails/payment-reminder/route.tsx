@@ -102,9 +102,9 @@ async function sendPaymentReminders(
       (payment.due_date as string) === todayBRT ? 0 : 3
 
     try {
-      const fromEmail =
-        process.env.RESEND_FROM_EMAIL ??
-        'Dream English School <onboarding@resend.dev>'
+      const fromEmail = (
+        process.env.RESEND_FROM_EMAIL ?? 'Dream English School <onboarding@resend.dev>'
+      ).trim()
 
       const { error: emailError } = await resend.emails.send({
         from: fromEmail,
