@@ -25,7 +25,7 @@ function formatDateBR(dateStr: string): string {
 
 async function sendPaymentReminders(
   schoolId?: string
-): Promise<{ sent: number; errors: number }> {
+): Promise<{ sent: number; errors: number; errorDetails?: string[] }> {
   const admin = createAdminClient()
 
   const todayBRT = getTodayBRT()
@@ -84,15 +84,16 @@ async function sendPaymentReminders(
 
   let sent = 0
   let errors = 0
+  const errorDetails: string[] = []
 
   for (const payment of payments) {
     const profileId = studentToProfileId.get(payment.student_id as string)
     const profile = profileId ? profileMap.get(profileId) : null
 
     if (!profile?.email) {
-      console.error(
-        `[PaymentReminder] No email found for student ${payment.student_id}`
-      )
+      const msg = `Aluno ${payment.student_id} sem e-mail cadastrado`
+      console.error(`[PaymentReminder] ${msg}`)
+      errorDetails.push(msg)
       errors++
       continue
     }
@@ -101,10 +102,12 @@ async function sendPaymentReminders(
       (payment.due_date as string) === todayBRT ? 0 : 3
 
     try {
+      const fromEmail =
+        process.env.RESEND_FROM_EMAIL ??
+        'Dream English School <onboarding@resend.dev>'
+
       const { error: emailError } = await resend.emails.send({
-        from:
-          process.env.RESEND_FROM_EMAIL ??
-          'Dream English School <onboarding@resend.dev>',
+        from: fromEmail,
         to: [profile.email],
         subject:
           daysUntilDue === 0
@@ -121,10 +124,9 @@ async function sendPaymentReminders(
       })
 
       if (emailError) {
-        console.error(
-          `[PaymentReminder] Resend error for ${profile.email}:`,
-          emailError
-        )
+        const msg = `Resend (${profile.email}): ${(emailError as { message?: string }).message ?? JSON.stringify(emailError)}`
+        console.error(`[PaymentReminder] ${msg}`)
+        errorDetails.push(msg)
         errors++
         continue
       }
@@ -136,15 +138,14 @@ async function sendPaymentReminders(
 
       sent++
     } catch (err) {
-      console.error(
-        `[PaymentReminder] Failed to send to ${profile.email}:`,
-        err
-      )
+      const msg = `Exceção (${profile.email}): ${err instanceof Error ? err.message : String(err)}`
+      console.error(`[PaymentReminder] ${msg}`)
+      errorDetails.push(msg)
       errors++
     }
   }
 
-  return { sent, errors }
+  return { sent, errors, errorDetails }
 }
 
 // GET — Vercel Cron (runs for all schools)

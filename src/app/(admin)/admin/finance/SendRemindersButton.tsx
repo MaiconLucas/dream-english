@@ -6,7 +6,7 @@ import { Bell, CheckCircle, AlertCircle, Info } from 'lucide-react'
 type State =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'success'; sent: number; errors: number }
+  | { status: 'success'; sent: number; errors: number; errorDetails?: string[] }
   | { status: 'error'; message: string }
 
 type Feedback = {
@@ -40,14 +40,14 @@ function getFeedback(state: State): Feedback | null {
       return {
         icon: <AlertCircle size={15} />,
         title: `Falha ao enviar ${errors} aviso${errors !== 1 ? 's' : ''}`,
-        detail: 'Verifique se os alunos têm e-mail cadastrado no perfil e se a chave do Resend está configurada corretamente.',
+        detail: state.errorDetails?.join(' | ') ?? 'Verifique se os alunos têm e-mail cadastrado no perfil e se a chave do Resend está configurada corretamente.',
         style: 'bg-red-50 border-red-200 text-red-700',
       }
 
     return {
       icon: <AlertCircle size={15} />,
       title: `${sent} enviado${sent !== 1 ? 's' : ''}, ${errors} com falha`,
-      detail: 'Alguns e-mails não foram entregues. Confira se todos os alunos têm e-mail cadastrado no perfil.',
+      detail: state.errorDetails?.join(' | ') ?? 'Alguns e-mails não foram entregues. Confira se todos os alunos têm e-mail cadastrado no perfil.',
       style: 'bg-amber-50 border-amber-200 text-amber-700',
     }
   }
@@ -75,7 +75,7 @@ export default function SendRemindersButton() {
         setState({ status: 'error', message: data.error ?? 'Erro ao enviar avisos' })
         return
       }
-      setState({ status: 'success', sent: data.sent, errors: data.errors })
+      setState({ status: 'success', sent: data.sent, errors: data.errors, errorDetails: data.errorDetails })
     } catch {
       setState({ status: 'error', message: 'Falha na conexão' })
     }
