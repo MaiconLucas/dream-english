@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, GraduationCap, BookOpen, DollarSign, LogOut, BookMarked } from 'lucide-react'
+import { LayoutDashboard, Users, GraduationCap, BookOpen, DollarSign, LogOut, BookMarked, BarChart3 } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/admin/classes', label: 'Turmas', icon: BookOpen },
   { href: '/admin/course', label: 'Conteúdo', icon: BookMarked },
   { href: '/admin/finance', label: 'Financeiro', icon: DollarSign },
+  { href: '/admin/reports', label: 'Relatórios', icon: BarChart3 },
 ]
 
 export default function Sidebar({ name, email }: { name: string; email: string }) {
