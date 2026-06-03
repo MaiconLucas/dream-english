@@ -1,34 +1,58 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+// Decodifica o payload de um JWT sem verificar a assinatura.
+// Suficiente para decisões de roteamento — a validação real ocorre nos layouts via getUser().
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(atob(b64)) as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-      // autoRefreshToken: false evita chamadas de rede no Edge Runtime (causa MIDDLEWARE_INVOCATION_TIMEOUT no Vercel).
-      // O refresh real do token acontece no layout via createClient() no servidor.
-      auth: { autoRefreshToken: false, detectSessionInUrl: false },
+// Lê a sessão Supabase diretamente dos cookies sem nenhuma chamada de rede.
+// Suporta cookie simples (sb-<ref>-auth-token) e cookies fragmentados (.0, .1, ...).
+function readSessionFromCookies(request: NextRequest): { id: string; app_metadata: Record<string, unknown> } | null {
+  const map = Object.fromEntries(request.cookies.getAll().map(c => [c.name, c.value]))
+
+  let raw: string | null =
+    Object.entries(map).find(([k]) => /^sb-.+-auth-token$/.test(k))?.[1] ?? null
+
+  if (!raw) {
+    const base = Object.keys(map).find(k => /^sb-.+-auth-token\.0$/.test(k))?.replace('.0', '')
+    if (base) {
+      const chunks: string[] = []
+      let i = 0
+      while (map[`${base}.${i}`]) chunks.push(map[`${base}.${i++}`])
+      raw = chunks.join('') || null
     }
-  )
+  }
 
-  const { data: { session } } = await supabase.auth.getSession()
+  if (!raw) return null
 
-  return { supabaseResponse, user: session?.user ?? null }
+  try {
+    const json = raw.startsWith('base64-') ? atob(raw.slice(7)) : raw
+    const session = JSON.parse(json) as { access_token?: string }
+    if (!session?.access_token) return null
+
+    const payload = decodeJwtPayload(session.access_token)
+    if (!payload) return null
+
+    // Token expirado: retorna null — o browser e os layouts cuidam do refresh
+    if (typeof payload.exp === 'number' && payload.exp < Date.now() / 1000) return null
+
+    return {
+      id: payload.sub as string,
+      app_metadata: (payload.app_metadata as Record<string, unknown>) ?? {},
+    }
+  } catch {
+    return null
+  }
+}
+
+export function updateSession(request: NextRequest) {
+  const supabaseResponse = NextResponse.next({ request })
+  const user = readSessionFromCookies(request)
+  return { supabaseResponse, user }
 }
