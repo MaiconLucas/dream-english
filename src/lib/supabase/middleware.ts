@@ -22,11 +22,12 @@ export async function updateSession(request: NextRequest) {
           )
         },
       },
+      // autoRefreshToken: false evita chamadas de rede no Edge Runtime (causa MIDDLEWARE_INVOCATION_TIMEOUT no Vercel).
+      // O refresh real do token acontece no layout via createClient() no servidor.
+      auth: { autoRefreshToken: false, detectSessionInUrl: false },
     }
   )
 
-  // getSession() lê o cookie local sem chamada de rede — seguro para decisões de roteamento no Edge.
-  // A validação real do JWT acontece no layout admin via getUser().
   const { data: { session } } = await supabase.auth.getSession()
 
   return { supabaseResponse, user: session?.user ?? null }
