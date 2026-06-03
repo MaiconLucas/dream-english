@@ -56,14 +56,13 @@ export default function StudentTable({ students }: { students: StudentListItem[]
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#e2e8f0] bg-[#f8fafc]">
-                  {['Nome', 'Email', 'Turma', 'Mensalidade', 'Status', 'Matrícula', ''].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Nome</th>
+                  <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Email</th>
+                  <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Turma</th>
+                  <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Mensalidade</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Status</th>
+                  <th className="hidden lg:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Matrícula</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody>
@@ -88,9 +87,9 @@ export default function StudentTable({ students }: { students: StudentListItem[]
                           {profile?.full_name ?? '—'}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-[#64748b]">{profile?.email ?? '—'}</td>
-                      <td className="px-4 py-3 text-[#64748b]">{className}</td>
-                      <td className="px-4 py-3 text-[#64748b] whitespace-nowrap">
+                      <td className="hidden sm:table-cell px-4 py-3 text-[#64748b]">{profile?.email ?? '—'}</td>
+                      <td className="hidden md:table-cell px-4 py-3 text-[#64748b]">{className}</td>
+                      <td className="hidden md:table-cell px-4 py-3 text-[#64748b] whitespace-nowrap">
                         {finalCents > 0 ? formatCurrency(finalCents / 100) : '—'}
                       </td>
                       <td className="px-4 py-3">
@@ -104,7 +103,7 @@ export default function StudentTable({ students }: { students: StudentListItem[]
                           {active ? 'Ativo' : 'Inativo'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-[#64748b] whitespace-nowrap">
+                      <td className="hidden lg:table-cell px-4 py-3 text-[#64748b] whitespace-nowrap">
                         {formatDate(s.created_at)}
                       </td>
                       <td className="px-4 py-3">

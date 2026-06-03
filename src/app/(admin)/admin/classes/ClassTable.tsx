@@ -59,14 +59,13 @@ export default function ClassTable({ classes }: { classes: ClassListItem[] }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#e2e8f0] bg-[#f8fafc]">
-                  {['Nome', 'Professor', 'Nível', 'Alunos', 'Horário', 'Status', ''].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Nome</th>
+                  <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Professor</th>
+                  <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Nível</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Alunos</th>
+                  <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Horário</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody>
@@ -87,14 +86,14 @@ export default function ClassTable({ classes }: { classes: ClassListItem[] }) {
                           {c.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-[#64748b]">{profile?.full_name ?? '—'}</td>
-                      <td className="px-4 py-3 text-[#64748b]">{c.level ?? '—'}</td>
+                      <td className="hidden sm:table-cell px-4 py-3 text-[#64748b]">{profile?.full_name ?? '—'}</td>
+                      <td className="hidden md:table-cell px-4 py-3 text-[#64748b]">{c.level ?? '—'}</td>
                       <td className="px-4 py-3 text-[#64748b]">
                         <span className="tabular-nums">
                           {c._enrollCount}/{c.max_students}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-[#64748b] whitespace-nowrap text-xs">
+                      <td className="hidden md:table-cell px-4 py-3 text-[#64748b] whitespace-nowrap text-xs">
                         {scheduleLabel(c.schedule)}
                       </td>
                       <td className="px-4 py-3">
