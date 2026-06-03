@@ -33,7 +33,7 @@ export default function ReportsClient({ revenueData, defaultersData, attendanceD
   return (
     <div className="space-y-6">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 bg-[#f1f5f9] p-1 rounded-xl w-fit flex-wrap">
+      <div className="flex items-center gap-1 bg-[#f1f5f9] p-1 rounded-xl overflow-x-auto w-full sm:w-fit">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
