@@ -27,6 +27,36 @@ const statusLabels: Record<string, string> = {
   CANCELLED: 'Cancelado',
 }
 
+function MobilePaymentRow({ p, indent = false }: { p: PaymentRow; indent?: boolean }) {
+  const actionable = p.status === 'PENDING' || p.status === 'OVERDUE'
+  return (
+    <div className={`px-4 py-3 border-t border-[#f1f5f9] ${indent ? 'pl-7 bg-[#fafbff]' : ''}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-[#0f172a]">
+              {formatCurrency(p.amount_cents / 100)}
+            </span>
+            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusStyles[p.status] ?? 'bg-gray-100 text-gray-500'}`}>
+              {statusLabels[p.status] ?? p.status}
+            </span>
+          </div>
+          <p className="text-xs text-[#94a3b8] mt-0.5">
+            {[p.reference_month, p.due_date ? `Venc ${formatDate(p.due_date)}` : null, p.notes]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        </div>
+        {actionable && (
+          <div className="shrink-0" onClick={e => e.stopPropagation()}>
+            <MarkPaidButton paymentId={p.id} />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function PaymentCells({ p }: { p: PaymentRow }) {
   return (
     <>
@@ -98,75 +128,115 @@ export default function FinanceTable({ groups }: { groups: StudentGroup[] }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-x-auto">
+      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <DollarSign size={40} className="text-[#e2e8f0] mb-3" />
             <p className="text-sm text-[#64748b]">Nenhum pagamento encontrado.</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#e2e8f0] bg-[#f8fafc]">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Aluno</th>
-                  <th className="max-md:hidden text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Descrição</th>
-                  <th className="max-sm:hidden text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Referência</th>
-                  <th className="max-sm:hidden text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Vencimento</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Valor</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Status</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(g => {
-                  const isExpanded = !!expanded[g.studentId]
-                  const displayPayment = g.oldestOpen ?? g.payments[0]
-                  const restPayments = g.payments.filter(p => p.id !== displayPayment.id)
-                  const hasMore = restPayments.length > 0
+          <>
+            {/* Mobile: card list */}
+            <div className="sm:hidden divide-y divide-[#f1f5f9]">
+              {filtered.map(g => {
+                const isExpanded = !!expanded[g.studentId]
+                const displayPayment = g.oldestOpen ?? g.payments[0]
+                const restPayments = g.payments.filter(p => p.id !== displayPayment.id)
+                const hasMore = restPayments.length > 0
 
-                  const result = [
-                    <tr
-                      key={`s-${g.studentId}`}
-                      className={`border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition ${hasMore ? 'cursor-pointer' : ''}`}
+                return (
+                  <div key={g.studentId}>
+                    <div
+                      className={`flex items-center gap-1.5 px-4 pt-3 pb-1 ${hasMore ? 'cursor-pointer' : ''}`}
                       onClick={() => { if (hasMore) toggle(g.studentId) }}
                     >
-                      <td className="px-4 py-3 font-medium text-[#0f172a] whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          {hasMore ? (
-                            isExpanded
-                              ? <ChevronDown size={14} className="text-[#94a3b8] shrink-0" />
-                              : <ChevronRight size={14} className="text-[#94a3b8] shrink-0" />
-                          ) : (
-                            <span className="inline-block w-3.5 shrink-0" />
-                          )}
-                          <span>{g.studentName}</span>
-                          {hasMore && !isExpanded && (
-                            <span className="text-[10px] text-[#94a3b8] font-normal">+{restPayments.length}</span>
-                          )}
-                        </div>
-                      </td>
-                      <PaymentCells p={displayPayment} />
-                    </tr>,
-                  ]
+                      {hasMore ? (
+                        isExpanded
+                          ? <ChevronDown size={14} className="text-[#94a3b8] shrink-0" />
+                          : <ChevronRight size={14} className="text-[#94a3b8] shrink-0" />
+                      ) : (
+                        <span className="inline-block w-3.5 shrink-0" />
+                      )}
+                      <span className="font-medium text-[#0f172a] text-sm">{g.studentName}</span>
+                      {hasMore && !isExpanded && (
+                        <span className="text-[10px] text-[#94a3b8] font-normal">+{restPayments.length}</span>
+                      )}
+                    </div>
+                    <MobilePaymentRow p={displayPayment} />
+                    {isExpanded && restPayments.map(p => (
+                      <MobilePaymentRow key={p.id} p={p} indent />
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
 
-                  if (isExpanded) {
-                    restPayments.forEach(p => {
-                      result.push(
-                        <tr
-                          key={`sub-${p.id}`}
-                          className="border-b border-[#f1f5f9] bg-[#fafbff] hover:bg-[#f1f5f9] transition"
-                        >
-                          <td className="px-4 py-3 pl-9 text-[#64748b]" />
-                          <PaymentCells p={p} />
-                        </tr>
-                      )
-                    })
-                  }
+            {/* Desktop: table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#e2e8f0] bg-[#f8fafc]">
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Aluno</th>
+                    <th className="max-md:hidden text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Descrição</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Referência</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Vencimento</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Valor</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Status</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(g => {
+                    const isExpanded = !!expanded[g.studentId]
+                    const displayPayment = g.oldestOpen ?? g.payments[0]
+                    const restPayments = g.payments.filter(p => p.id !== displayPayment.id)
+                    const hasMore = restPayments.length > 0
 
-                  return result
-                })}
-              </tbody>
-            </table>
+                    const result = [
+                      <tr
+                        key={`s-${g.studentId}`}
+                        className={`border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition ${hasMore ? 'cursor-pointer' : ''}`}
+                        onClick={() => { if (hasMore) toggle(g.studentId) }}
+                      >
+                        <td className="px-4 py-3 font-medium text-[#0f172a] whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            {hasMore ? (
+                              isExpanded
+                                ? <ChevronDown size={14} className="text-[#94a3b8] shrink-0" />
+                                : <ChevronRight size={14} className="text-[#94a3b8] shrink-0" />
+                            ) : (
+                              <span className="inline-block w-3.5 shrink-0" />
+                            )}
+                            <span>{g.studentName}</span>
+                            {hasMore && !isExpanded && (
+                              <span className="text-[10px] text-[#94a3b8] font-normal">+{restPayments.length}</span>
+                            )}
+                          </div>
+                        </td>
+                        <PaymentCells p={displayPayment} />
+                      </tr>,
+                    ]
+
+                    if (isExpanded) {
+                      restPayments.forEach(p => {
+                        result.push(
+                          <tr
+                            key={`sub-${p.id}`}
+                            className="border-b border-[#f1f5f9] bg-[#fafbff] hover:bg-[#f1f5f9] transition"
+                          >
+                            <td className="px-4 py-3 pl-9 text-[#64748b]" />
+                            <PaymentCells p={p} />
+                          </tr>
+                        )
+                      })
+                    }
+
+                    return result
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
