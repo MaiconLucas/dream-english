@@ -98,15 +98,14 @@ export default function FinanceTable({ groups }: { groups: StudentGroup[] }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-x-auto">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <DollarSign size={40} className="text-[#e2e8f0] mb-3" />
             <p className="text-sm text-[#64748b]">Nenhum pagamento encontrado.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#e2e8f0] bg-[#f8fafc]">
                   <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Aluno</th>
@@ -168,7 +167,6 @@ export default function FinanceTable({ groups }: { groups: StudentGroup[] }) {
                 })}
               </tbody>
             </table>
-          </div>
         )}
       </div>
     </div>
