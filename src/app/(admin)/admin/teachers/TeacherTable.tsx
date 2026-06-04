@@ -47,11 +47,11 @@ export default function TeacherTable({ teachers }: { teachers: TeacherListItem[]
               <thead>
                 <tr className="border-b border-[#e2e8f0] bg-[#f8fafc]">
                   <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Nome</th>
-                  <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Email</th>
-                  <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Especialidades</th>
-                  <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Turmas ativas</th>
+                  <th className="max-sm:hidden text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Email</th>
+                  <th className="max-md:hidden text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Especialidades</th>
+                  <th className="max-md:hidden text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Turmas ativas</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Status</th>
-                  <th className="hidden lg:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Cadastro</th>
+                  <th className="max-lg:hidden text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Cadastro</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap"></th>
                 </tr>
               </thead>
@@ -73,8 +73,8 @@ export default function TeacherTable({ teachers }: { teachers: TeacherListItem[]
                           {profile?.full_name ?? '—'}
                         </Link>
                       </td>
-                      <td className="hidden sm:table-cell px-4 py-3 text-[#64748b]">{profile?.email ?? '—'}</td>
-                      <td className="hidden md:table-cell px-4 py-3">
+                      <td className="max-sm:hidden px-4 py-3 text-[#64748b]">{profile?.email ?? '—'}</td>
+                      <td className="max-md:hidden px-4 py-3">
                         <div className="flex flex-wrap gap-1">
                           {(t.specialties ?? []).length > 0 ? (
                             (t.specialties ?? []).slice(0, 3).map((s) => (
@@ -95,7 +95,7 @@ export default function TeacherTable({ teachers }: { teachers: TeacherListItem[]
                           )}
                         </div>
                       </td>
-                      <td className="hidden md:table-cell px-4 py-3 text-[#64748b] text-center">
+                      <td className="max-md:hidden px-4 py-3 text-[#64748b] text-center">
                         {t._classCount ?? 0}
                       </td>
                       <td className="px-4 py-3">
@@ -109,7 +109,7 @@ export default function TeacherTable({ teachers }: { teachers: TeacherListItem[]
                           {active ? 'Ativo' : 'Inativo'}
                         </span>
                       </td>
-                      <td className="hidden lg:table-cell px-4 py-3 text-[#64748b] whitespace-nowrap">
+                      <td className="max-lg:hidden px-4 py-3 text-[#64748b] whitespace-nowrap">
                         {formatDate(t.created_at)}
                       </td>
                       <td className="px-4 py-3">

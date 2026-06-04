@@ -30,9 +30,9 @@ const statusLabels: Record<string, string> = {
 function PaymentCells({ p }: { p: PaymentRow }) {
   return (
     <>
-      <td className="hidden md:table-cell px-4 py-3 text-[#64748b]">{p.notes ?? '—'}</td>
-      <td className="hidden sm:table-cell px-4 py-3 text-[#64748b]">{p.reference_month ?? '—'}</td>
-      <td className="hidden sm:table-cell px-4 py-3 text-[#64748b] whitespace-nowrap">{formatDate(p.due_date)}</td>
+      <td className="max-md:hidden px-4 py-3 text-[#64748b]">{p.notes ?? '—'}</td>
+      <td className="max-sm:hidden px-4 py-3 text-[#64748b]">{p.reference_month ?? '—'}</td>
+      <td className="max-sm:hidden px-4 py-3 text-[#64748b] whitespace-nowrap">{formatDate(p.due_date)}</td>
       <td className="px-4 py-3 font-medium text-[#0f172a] whitespace-nowrap">
         {formatCurrency(p.amount_cents / 100)}
       </td>
@@ -110,9 +110,9 @@ export default function FinanceTable({ groups }: { groups: StudentGroup[] }) {
               <thead>
                 <tr className="border-b border-[#e2e8f0] bg-[#f8fafc]">
                   <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Aluno</th>
-                  <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Descrição</th>
-                  <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Referência</th>
-                  <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Vencimento</th>
+                  <th className="max-md:hidden text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Descrição</th>
+                  <th className="max-sm:hidden text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Referência</th>
+                  <th className="max-sm:hidden text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Vencimento</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Valor</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap">Status</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-[#64748b] uppercase tracking-wide whitespace-nowrap"></th>
