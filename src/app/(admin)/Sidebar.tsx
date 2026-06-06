@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -83,8 +84,9 @@ export default function Sidebar({ name, email }: { name: string; email: string }
       {/* ── Desktop: sidebar fixa ──────────────────────── */}
       <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 bg-white border-r border-[#e2e8f0] flex-col z-30">
         <div className="h-16 flex items-center px-6 border-b border-[#e2e8f0]">
-          <span className="text-lg font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-            🎓 Dream English
+          <span className="flex items-center gap-2 text-lg font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            <Image src="/logo.png" alt="" width={28} height={28} className="object-contain shrink-0" />
+            Dream English
           </span>
         </div>
         <NavLinks pathname={pathname} />
@@ -100,8 +102,9 @@ export default function Sidebar({ name, email }: { name: string; email: string }
         >
           <Menu size={20} />
         </button>
-        <span className="text-base font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-          🎓 Dream English
+        <span className="flex items-center gap-2 text-base font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+          <Image src="/logo.png" alt="" width={24} height={24} className="object-contain shrink-0" />
+          Dream English
         </span>
       </div>
 
@@ -114,8 +117,9 @@ export default function Sidebar({ name, email }: { name: string; email: string }
           />
           <aside className="md:hidden fixed inset-y-0 left-0 w-72 bg-white flex flex-col z-50 shadow-xl">
             <div className="h-14 flex items-center justify-between px-4 border-b border-[#e2e8f0]">
-              <span className="text-base font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-                🎓 Dream English
+              <span className="flex items-center gap-2 text-base font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                <Image src="/logo.png" alt="" width={24} height={24} className="object-contain shrink-0" />
+                Dream English
               </span>
               <button
                 onClick={() => setOpen(false)}

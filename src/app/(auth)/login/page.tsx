@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useState } from 'react'
+import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -51,9 +52,7 @@ function LoginForm() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl border border-[#e2e8f0] p-8 shadow-sm">
           <div className="mb-8 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#ebf3ff] mb-4">
-              <span className="text-2xl">🎓</span>
-            </div>
+            <Image src="/logo.png" alt="Dream English" width={64} height={64} className="object-contain mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
               Dream English School
             </h1>

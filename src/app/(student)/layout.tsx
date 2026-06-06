@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
@@ -28,8 +29,9 @@ export default async function StudentLayout({ children }: { children: React.Reac
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       <header className="fixed top-0 inset-x-0 z-40 h-14 bg-white border-b border-[#e2e8f0] flex items-center px-6 gap-4">
-        <span className="text-base font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-          🎓 Dream English
+        <span className="flex items-center gap-2 text-base font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+          <Image src="/logo.png" alt="" width={24} height={24} className="object-contain shrink-0" />
+          Dream English
         </span>
         <nav className="flex items-center gap-1 ml-4">
           <Link href="/dashboard"

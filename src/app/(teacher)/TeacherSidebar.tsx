@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, BookOpen, LogOut } from 'lucide-react'
@@ -16,8 +17,9 @@ export default function TeacherSidebar({ name, email }: { name: string; email: s
   return (
     <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-[#e2e8f0] flex flex-col">
       <div className="h-16 flex items-center px-6 border-b border-[#e2e8f0]">
-        <span className="text-lg font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-          🎓 Dream English
+        <span className="flex items-center gap-2 text-lg font-bold text-[#0f172a]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+          <Image src="/logo.png" alt="" width={28} height={28} className="object-contain shrink-0" />
+          Dream English
         </span>
       </div>
 
