@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, BookOpen, LogOut } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
+import ChangePasswordButton from '@/components/shared/ChangePasswordButton'
 
 const navItems = [
   { href: '/teacher/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -49,6 +50,7 @@ export default function TeacherSidebar({ name, email }: { name: string; email: s
           <p className="text-xs font-medium text-[#0f172a] truncate">{name}</p>
           <p className="text-[11px] text-[#64748b] truncate">{email}</p>
         </div>
+        <ChangePasswordButton className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a] transition" />
         <form action={logout}>
           <button
             type="submit"

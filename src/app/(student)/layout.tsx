@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import { BookOpen, ClipboardList, DollarSign, LayoutDashboard, LogOut } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
+import ChangePasswordButton from '@/components/shared/ChangePasswordButton'
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -55,8 +56,9 @@ export default async function StudentLayout({ children }: { children: React.Reac
             Financeiro
           </Link>
         </nav>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2">
           <span className="text-sm text-[#64748b] hidden sm:block">{profile.full_name}</span>
+          <ChangePasswordButton className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a] transition" />
           <form action={logout}>
             <button type="submit"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[#64748b] hover:bg-red-50 hover:text-red-600 transition">

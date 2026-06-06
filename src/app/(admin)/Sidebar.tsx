@@ -9,6 +9,7 @@ import {
   LogOut, BookMarked, BarChart2, Menu, X,
 } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
+import ChangePasswordButton from '@/components/shared/ChangePasswordButton'
 
 const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard',  icon: LayoutDashboard },
@@ -53,6 +54,7 @@ function SidebarFooter({ name, email }: { name: string; email: string }) {
         <p className="text-[11px] text-[#64748b] truncate">{email}</p>
         <p className="text-[10px] text-[#94a3b8] mt-0.5">v0.2.0</p>
       </div>
+      <ChangePasswordButton className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a] transition" />
       <form action={logout}>
         <button
           type="submit"
