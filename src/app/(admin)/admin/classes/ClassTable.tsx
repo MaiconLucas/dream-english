@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { BookOpen, Search, Pencil } from 'lucide-react'
+import { BookOpen, Search } from 'lucide-react'
 import type { ClassListItem } from './page'
 import type { Schedule } from './actions'
+import ClassActionsCell from './ClassActionsCell'
 
 const DAY_SHORT: Record<string, string> = {
   Monday: 'Seg',
@@ -107,13 +108,11 @@ export default function ClassTable({ classes }: { classes: ClassListItem[] }) {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <Link
-                          href={`/admin/classes/${c.id}/edit`}
-                          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#64748b] hover:text-[#1a56db] transition"
-                        >
-                          <Pencil size={13} />
-                          Editar
-                        </Link>
+                        <ClassActionsCell
+                          classId={c.id}
+                          className={c.name}
+                          active={c.active}
+                        />
                       </td>
                     </tr>
                   )

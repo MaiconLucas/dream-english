@@ -101,6 +101,52 @@ export async function updateClass(
   return { error: null }
 }
 
+// ─── toggle active ───────────────────────────────────────────────────────────
+
+export async function toggleClassActive(
+  classId: string,
+  active: boolean,
+): Promise<{ error: string | null }> {
+  const admin = createAdminClient()
+  const { error } = await admin.from('classes').update({ active }).eq('id', classId)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/classes')
+  revalidatePath(`/admin/classes/${classId}`)
+  return { error: null }
+}
+
+// ─── delete ─────────────────────────────────────────────────────────────────
+
+export async function deleteClass(
+  classId: string,
+): Promise<{ error: string | null }> {
+  const admin = createAdminClient()
+
+  // Delete attendance records for all lessons in this class
+  const { data: lessons } = await admin
+    .from('lessons')
+    .select('id')
+    .eq('class_id', classId)
+
+  if (lessons && lessons.length > 0) {
+    const lessonIds = lessons.map((l) => l.id)
+    const { error: e1 } = await admin.from('attendance').delete().in('lesson_id', lessonIds)
+    if (e1) return { error: `attendance: ${e1.message}` }
+  }
+
+  const { error: e2 } = await admin.from('lessons').delete().eq('class_id', classId)
+  if (e2) return { error: `lessons: ${e2.message}` }
+
+  const { error: e3 } = await admin.from('enrollments').delete().eq('class_id', classId)
+  if (e3) return { error: `enrollments: ${e3.message}` }
+
+  const { error: e4 } = await admin.from('classes').delete().eq('id', classId)
+  if (e4) return { error: `classes: ${e4.message}` }
+
+  revalidatePath('/admin/classes')
+  return { error: null }
+}
+
 // ─── legacy (AddClassModal compat) ───────────────────────────────────────────
 
 export async function addClass(
