@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
 import { GraduationCap, Search, Pencil } from 'lucide-react'
 import type { TeacherListItem } from './page'
+import DeleteTeacherButton from './DeleteTeacherButton'
 
 function resolveOne<T>(val: T | T[] | null | undefined): T | null {
   if (!val) return null
@@ -112,13 +113,20 @@ export default function TeacherTable({ teachers }: { teachers: TeacherListItem[]
                         {formatDate(t.created_at)}
                       </td>
                       <td className="px-4 py-3">
-                        <Link
-                          href={`/admin/teachers/${t.id}/edit`}
-                          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#64748b] hover:text-[#1a56db] transition"
-                        >
-                          <Pencil size={13} />
-                          Editar
-                        </Link>
+                        <div className="flex items-center gap-3">
+                          <Link
+                            href={`/admin/teachers/${t.id}/edit`}
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#64748b] hover:text-[#1a56db] transition"
+                          >
+                            <Pencil size={13} />
+                            Editar
+                          </Link>
+                          <DeleteTeacherButton
+                            teacherId={t.id}
+                            profileId={t.profile_id}
+                            teacherName={profile?.full_name ?? profile?.email ?? t.id}
+                          />
+                        </div>
                       </td>
                     </tr>
                   )

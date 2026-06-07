@@ -117,6 +117,34 @@ export async function updateTeacher(
   return { error: null }
 }
 
+// ─── delete ─────────────────────────────────────────────────────────────────
+
+export async function deleteTeacher(
+  teacherId: string,
+  profileId: string,
+): Promise<{ error: string | null }> {
+  const admin = createAdminClient()
+
+  // Desvincula turmas (não exclui a turma, apenas remove o professor)
+  const { error: e1 } = await admin
+    .from('classes')
+    .update({ teacher_id: null })
+    .eq('teacher_id', teacherId)
+  if (e1) return { error: `classes: ${e1.message}` }
+
+  const { error: e2 } = await admin.from('teachers').delete().eq('id', teacherId)
+  if (e2) return { error: `teachers: ${e2.message}` }
+
+  const { error: e3 } = await admin.from('profiles').delete().eq('id', profileId)
+  if (e3) return { error: `profiles: ${e3.message}` }
+
+  const { error: e4 } = await admin.auth.admin.deleteUser(profileId)
+  if (e4) return { error: `auth: ${e4.message}` }
+
+  revalidatePath('/admin/teachers')
+  return { error: null }
+}
+
 // ─── legacy (AddTeacherModal compat) ─────────────────────────────────────────
 
 export async function addTeacher(
