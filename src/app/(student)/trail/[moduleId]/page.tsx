@@ -58,6 +58,30 @@ export default async function ModulePage({ params }: { params: { moduleId: strin
   const lessonList = (lessons ?? []) as Lesson[]
   const lessonIds = lessonList.map(l => l.id)
 
+  // Find the student's enrolled class(es)
+  const { data: enrollments } = student
+    ? await admin
+        .from('enrollments')
+        .select('class_id')
+        .eq('student_id', student.id)
+        .eq('status', 'ACTIVE')
+    : { data: [] }
+
+  const classIds = (enrollments ?? []).map((e: { class_id: string }) => e.class_id)
+
+  // Get published sessions for student's classes
+  const { data: publishedSessions } = classIds.length && lessonIds.length
+    ? await admin
+        .from('class_sessions')
+        .select('lesson_id')
+        .eq('status', 'published')
+        .in('class_id', classIds)
+        .in('lesson_id', lessonIds)
+    : { data: [] }
+
+  const unlockedSet = new Set((publishedSessions ?? []).map((s: { lesson_id: string }) => s.lesson_id))
+
+  // Still track completion for UI purposes
   const { data: progressRows } = student && lessonIds.length
     ? await admin
         .from('lesson_progress')
@@ -67,13 +91,8 @@ export default async function ModulePage({ params }: { params: { moduleId: strin
     : { data: [] }
 
   const completedSet = new Set(
-    (progressRows ?? []).filter(p => p.completed).map(p => p.lesson_id)
+    (progressRows ?? []).filter((p: { completed: boolean }) => p.completed).map((p: { lesson_id: string }) => p.lesson_id)
   )
-
-  function isLessonUnlocked(index: number): boolean {
-    if (index === 0) return true
-    return completedSet.has(lessonList[index - 1].id)
-  }
 
   const totalDone = lessonIds.filter(id => completedSet.has(id)).length
 
@@ -104,7 +123,7 @@ export default async function ModulePage({ params }: { params: { moduleId: strin
       ) : (
         <div className="space-y-3">
           {lessonList.map((lesson, index) => {
-            const unlocked = isLessonUnlocked(index)
+            const unlocked = unlockedSet.has(lesson.id)
             const done = completedSet.has(lesson.id)
 
             return (
@@ -154,7 +173,11 @@ export default async function ModulePage({ params }: { params: { moduleId: strin
                     <span className="text-[10px] font-semibold text-[#1a56db] bg-[#ebf3ff] px-2.5 py-1 rounded-full flex-shrink-0">
                       Estudar
                     </span>
-                  ) : null}
+                  ) : (
+                    <span className="text-[10px] font-medium text-[#94a3b8] flex-shrink-0">
+                      Aguardando professor
+                    </span>
+                  )}
 
                   <ChevronRight size={15} className={`flex-shrink-0 ${unlocked ? 'text-[#94a3b8]' : 'text-[#e2e8f0]'}`} />
                 </div>

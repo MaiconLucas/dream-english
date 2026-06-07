@@ -69,6 +69,55 @@ export default async function LessonPage({
         .maybeSingle()
     : { data: null }
 
+  // Find published session for student's enrolled class
+  const { data: enrollments } = student
+    ? await admin
+        .from('enrollments')
+        .select('class_id')
+        .eq('student_id', student.id)
+        .eq('status', 'ACTIVE')
+    : { data: [] }
+
+  const classIds = (enrollments ?? []).map((e: { class_id: string }) => e.class_id)
+
+  const { data: publishedSession } = classIds.length
+    ? await admin
+        .from('class_sessions')
+        .select('id')
+        .eq('lesson_id', params.lessonId)
+        .eq('status', 'published')
+        .in('class_id', classIds)
+        .maybeSingle()
+    : { data: null }
+
+  const sessionId = publishedSession?.id ?? null
+
+  // Get student's record from that session
+  const { data: studentRecord } = sessionId && student
+    ? await admin
+        .from('session_student_records')
+        .select('attended, performance_note')
+        .eq('session_id', sessionId)
+        .eq('student_id', student.id)
+        .maybeSingle()
+    : { data: null }
+
+  const { data: sessionSummary } = sessionId
+    ? await admin
+        .from('class_sessions')
+        .select('summary')
+        .eq('id', sessionId)
+        .maybeSingle()
+    : { data: null }
+
+  const { data: studentAnswers } = sessionId && student
+    ? await admin
+        .from('session_question_answers')
+        .select('question_id, answer_text, teacher_feedback, score')
+        .eq('session_id', sessionId)
+        .eq('student_id', student.id)
+    : { data: [] }
+
   const l = lesson as CourseLesson
   const qs = (questions ?? []) as LessonQuestion[]
   const theory = (l.theory ?? {}) as {
@@ -239,6 +288,65 @@ export default async function LessonPage({
             completed={isCompleted}
           />
         </div>
+      )}
+
+      {/* Session record */}
+      {sessionId && (
+        <Card>
+          <h2 className="text-sm font-semibold text-[#0f172a] mb-4">📋 Registro da sua aula</h2>
+
+          {sessionSummary?.summary && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-[#64748b] mb-1">Resumo do professor</p>
+              <p className="text-sm text-[#374151] whitespace-pre-wrap leading-relaxed">{sessionSummary.summary}</p>
+            </div>
+          )}
+
+          {studentRecord && (
+            <div className="mb-4">
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                studentRecord.attended ? 'bg-[#ecfdf5] text-[#10b981]' : 'bg-[#f1f5f9] text-[#64748b]'
+              }`}>
+                {studentRecord.attended ? 'Presença confirmada' : 'Ausente'}
+              </span>
+            </div>
+          )}
+
+          {qs.length > 0 && (studentAnswers ?? []).length > 0 && (
+            <div className="space-y-4">
+              <p className="text-xs font-medium text-[#64748b]">Suas respostas</p>
+              {qs.map((q) => {
+                const answer = (studentAnswers ?? []).find(
+                  (a: { question_id: string }) => a.question_id === q.id
+                ) as { question_id: string; answer_text: string | null; teacher_feedback: string | null; score: number | null } | undefined
+                if (!answer) return null
+                return (
+                  <div key={q.id} className="space-y-1.5">
+                    <p className="text-sm font-medium text-[#0f172a]">{q.question}</p>
+                    {answer.answer_text && (
+                      <p className="text-sm text-[#374151] bg-[#f8fafc] px-3 py-2 rounded-lg">
+                        {answer.answer_text}
+                      </p>
+                    )}
+                    {answer.teacher_feedback && (
+                      <p className="text-xs text-[#64748b] italic">Feedback: {answer.teacher_feedback}</p>
+                    )}
+                    {answer.score !== null && (
+                      <p className="text-xs font-semibold text-[#1a56db]">Nota: {answer.score}/100</p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {studentRecord?.performance_note && (
+            <div className="mt-4 pt-4 border-t border-[#f1f5f9]">
+              <p className="text-xs font-medium text-[#64748b] mb-1">Observação do professor</p>
+              <p className="text-sm text-[#374151] italic">{studentRecord.performance_note}</p>
+            </div>
+          )}
+        </Card>
       )}
     </div>
   )

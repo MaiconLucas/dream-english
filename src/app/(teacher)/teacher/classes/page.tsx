@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { BookOpen, ClipboardList, History, Users } from 'lucide-react'
+import { BookOpen, ClipboardList, History, Users, GraduationCap } from 'lucide-react'
 
 type Schedule = { days: string[]; time: string; duration: number }
 
@@ -107,8 +107,15 @@ export default async function TeacherClassesPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <Link
-                          href={`/teacher/classes/${cls.id}/attendance`}
+                          href={`/teacher/classes/${cls.id}`}
                           className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1a56db] hover:underline"
+                        >
+                          <GraduationCap size={13} />
+                          Diário
+                        </Link>
+                        <Link
+                          href={`/teacher/classes/${cls.id}/attendance`}
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#64748b] hover:text-[#1a56db] hover:underline"
                         >
                           <ClipboardList size={13} />
                           Chamada
