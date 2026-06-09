@@ -104,8 +104,13 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
     const raw = fenceMatch ? fenceMatch[1].trim() : trimmed
 
     try {
-      // Strip BOM and normalize line endings before parsing
-      const clean = raw.replace(/^﻿/, '').replace(/\r\n/g, '\n')
+      const clean = raw
+        .replace(/^﻿/, '')                           // BOM
+        .replace(/\r\n/g, '\n')                           // CRLF
+        .replace(/[“”„‟]/g, '"')      // curly double quotes → straight
+        .replace(/[‘’‚‛]/g, "'")      // curly single quotes → straight
+        .replace(/[​‌‍⁠﻿]/g, '') // zero-width chars
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // control chars (keep \t \n)
       const parsed = JSON.parse(clean) as ImportedLesson
       if (!parsed.title) { setParseError('JSON inválido: campo "title" não encontrado.'); return }
       parsed.status = 'DRAFT'
@@ -122,7 +127,16 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
       parsed.song_exercise.discussion_questions = parsed.song_exercise.discussion_questions ?? []
       setLesson(parsed)
     } catch (e) {
-      setParseError(`JSON inválido: ${(e as Error).message}`)
+      const msg = (e as Error).message
+      const posMatch = msg.match(/position (\d+)/)
+      if (posMatch) {
+        const pos = parseInt(posMatch[1])
+        const context = raw.slice(Math.max(0, pos - 20), pos + 20)
+        const charCode = raw.codePointAt(pos)
+        setParseError(`JSON inválido na posição ${pos}: ...${context}... (char U+${charCode?.toString(16).toUpperCase()})`)
+      } else {
+        setParseError(`JSON inválido: ${msg}`)
+      }
     }
   }
 
