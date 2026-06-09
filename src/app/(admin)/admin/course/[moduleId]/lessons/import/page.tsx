@@ -147,21 +147,21 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
 
     // Basic sanitization: BOM, CRLF, control chars — do NOT touch quotes
     const clean = raw
-      .replace(/^\uFEFF/, ‘’)
-      .replace(/\r\n/g, ‘\n’)
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ‘’)
+      .replace(/^\uFEFF/, '')
+      .replace(/\r\n/g, '\n')
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
 
     function applyLesson(parsed: ImportedLesson) {
-      if (!parsed.title) { setParseError(‘JSON inválido: campo “title” não encontrado.’); return }
-      parsed.status = ‘DRAFT’
+      if (!parsed.title) { setParseError('JSON inválido: campo “title” não encontrado.'); return }
+      parsed.status = 'DRAFT'
       parsed.objectives = parsed.objectives ?? []
       parsed.questions = parsed.questions ?? []
-      parsed.theory = parsed.theory ?? { explanation: ‘’, rows: [] }
+      parsed.theory = parsed.theory ?? { explanation: '', rows: [] }
       parsed.theory.rows = parsed.theory.rows ?? []
       parsed.theory.headers = parsed.theory.headers ?? []
-      parsed.activity = parsed.activity ?? { type: ‘game’, title: ‘’, duration_min: 15, instructions: ‘’, examples: [] }
+      parsed.activity = parsed.activity ?? { type: 'game', title: '', duration_min: 15, instructions: '', examples: [] }
       parsed.activity.examples = parsed.activity.examples ?? []
-      parsed.song_exercise = parsed.song_exercise ?? { song_title: ‘’, artist: ‘’, verses: [], discussion_questions: [] }
+      parsed.song_exercise = parsed.song_exercise ?? { song_title: '', artist: '', verses: [], discussion_questions: [] }
       parsed.song_exercise.verses = parsed.song_exercise.verses ?? []
       parsed.song_exercise.discussion_questions = parsed.song_exercise.discussion_questions ?? []
       setLesson(parsed)
@@ -178,7 +178,7 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
         const posMatch = msg.match(/position (\d+)/)
         if (posMatch) {
           const pos = parseInt(posMatch[1])
-          const ctx = clean.slice(Math.max(0, pos - 30), pos + 30).replace(/\n/g, ‘ ‘)
+          const ctx = clean.slice(Math.max(0, pos - 30), pos + 30).replace(/\n/g, ' ')
           setParseError(`JSON inválido na posição ${pos}: ...${ctx}...`)
         } else {
           setParseError(`JSON inválido: ${msg}`)
