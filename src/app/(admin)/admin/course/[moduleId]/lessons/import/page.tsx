@@ -6,8 +6,6 @@ import Link from 'next/link'
 import { ChevronLeft, Sparkles, Loader2, CheckCircle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { createCourseLesson, type LessonPayload } from '../../../actions'
 
-const inputCls = 'w-full px-3 py-2 rounded-lg border border-[#e2e8f0] text-sm text-[#0f172a] bg-white focus:outline-none focus:ring-2 focus:ring-[#1a56db]'
-
 type ImportedLesson = LessonPayload & { cefr_level: string; status: 'DRAFT' | 'PUBLISHED' }
 
 function Section({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
