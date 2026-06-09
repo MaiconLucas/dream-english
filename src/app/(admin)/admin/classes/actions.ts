@@ -60,6 +60,7 @@ export async function createClass(
 const updateSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   teacherId: z.string(),
+  moduleId: z.string(),
   level: z.string(),
   maxStudents: z.number().int().min(1, 'Capacidade mínima é 1'),
   active: z.boolean(),
@@ -79,7 +80,7 @@ export async function updateClass(
   const parsed = updateSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
 
-  const { name, teacherId, level, maxStudents, active, schedule } = parsed.data
+  const { name, teacherId, moduleId, level, maxStudents, active, schedule } = parsed.data
   const admin = createAdminClient()
 
   const { error } = await admin
@@ -88,6 +89,7 @@ export async function updateClass(
       name,
       level: level.trim() || null,
       teacher_id: teacherId.trim() || null,
+      module_id: moduleId.trim() || null,
       max_students: maxStudents,
       active,
       schedule,

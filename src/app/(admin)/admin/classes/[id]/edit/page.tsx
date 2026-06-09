@@ -20,10 +20,10 @@ export default async function EditClassPage({ params }: { params: { id: string }
     .single()
   if (!myProfile) return null
 
-  const [{ data: cls }, { data: rawTeachers }] = await Promise.all([
+  const [{ data: cls }, { data: rawTeachers }, { data: rawModules }] = await Promise.all([
     admin
       .from('classes')
-      .select('id, name, level, max_students, active, schedule, teacher_id')
+      .select('id, name, level, max_students, active, schedule, teacher_id, module_id')
       .eq('id', params.id)
       .eq('school_id', myProfile.school_id)
       .single(),
@@ -31,6 +31,12 @@ export default async function EditClassPage({ params }: { params: { id: string }
       .from('teachers')
       .select('id, profiles!profile_id(full_name, active)')
       .eq('school_id', myProfile.school_id),
+    admin
+      .from('course_modules')
+      .select('id, title, cefr_level')
+      .eq('school_id', myProfile.school_id)
+      .eq('is_published', true)
+      .order('order_index'),
   ])
 
   if (!cls) notFound()
@@ -67,9 +73,11 @@ export default async function EditClassPage({ params }: { params: { id: string }
       <EditClassForm
         classId={params.id}
         teachers={teachers}
+        modules={(rawModules ?? []).map(m => ({ id: m.id, title: m.title, cefrLevel: m.cefr_level }))}
         defaults={{
           name: cls.name,
           teacherId: cls.teacher_id ?? '',
+          moduleId: (cls as { module_id?: string | null }).module_id ?? '',
           level: cls.level ?? '',
           maxStudents: cls.max_students,
           active: cls.active,

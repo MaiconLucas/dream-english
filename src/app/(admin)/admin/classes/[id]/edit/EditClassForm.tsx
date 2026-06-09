@@ -17,6 +17,7 @@ const LEVELS = ['Beginner', 'Elementary', 'Pre-Intermediate', 'Intermediate', 'U
 const schema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   teacherId: z.string(),
+  moduleId: z.string(),
   level: z.string(),
   maxStudents: z.number().int().min(1, 'Capacidade mínima é 1'),
   active: z.boolean(),
@@ -30,10 +31,11 @@ type FormValues = z.infer<typeof schema>
 type Props = {
   classId: string
   teachers: { id: string; name: string }[]
+  modules: { id: string; title: string; cefrLevel: string }[]
   defaults: FormValues
 }
 
-export default function EditClassForm({ classId, teachers, defaults }: Props) {
+export default function EditClassForm({ classId, teachers, modules, defaults }: Props) {
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -64,6 +66,7 @@ export default function EditClassForm({ classId, teachers, defaults }: Props) {
     const result = await updateClass(classId, {
       name: values.name,
       teacherId: values.teacherId,
+      moduleId: values.moduleId,
       level: values.level,
       maxStudents: values.maxStudents,
       active: values.active,
@@ -106,6 +109,17 @@ export default function EditClassForm({ classId, teachers, defaults }: Props) {
             </select>
           </Field>
 
+          <Field label="Módulo de curso" error={errors.moduleId?.message}>
+            <select {...register('moduleId')} className={inputCls(!!errors.moduleId)}>
+              <option value="">Sem módulo vinculado</option>
+              {modules.map((m) => (
+                <option key={m.id} value={m.id}>{m.title} ({m.cefrLevel})</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <Field label="Nível" error={errors.level?.message}>
             <select {...register('level')} className={inputCls(!!errors.level)}>
               <option value="">Selecionar nível</option>
