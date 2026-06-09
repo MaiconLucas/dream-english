@@ -104,7 +104,9 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
     const raw = fenceMatch ? fenceMatch[1].trim() : trimmed
 
     try {
-      const parsed = JSON.parse(raw) as ImportedLesson
+      // Strip BOM and normalize line endings before parsing
+      const clean = raw.replace(/^﻿/, '').replace(/\r\n/g, '\n')
+      const parsed = JSON.parse(clean) as ImportedLesson
       if (!parsed.title) { setParseError('JSON inválido: campo "title" não encontrado.'); return }
       parsed.status = 'DRAFT'
       // Normalise arrays that AI might leave as null
@@ -119,8 +121,8 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
       parsed.song_exercise.verses = parsed.song_exercise.verses ?? []
       parsed.song_exercise.discussion_questions = parsed.song_exercise.discussion_questions ?? []
       setLesson(parsed)
-    } catch {
-      setParseError('JSON inválido. Verifique se a IA retornou somente o JSON.')
+    } catch (e) {
+      setParseError(`JSON inválido: ${(e as Error).message}`)
     }
   }
 
