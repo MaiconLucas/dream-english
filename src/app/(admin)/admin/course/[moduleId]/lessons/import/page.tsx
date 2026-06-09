@@ -99,9 +99,9 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
     const trimmed = jsonText.trim()
     if (!trimmed) { setParseError('Cole o JSON gerado pela IA.'); return }
 
-    // Extract JSON even if wrapped in markdown code blocks
-    const match = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/) ?? trimmed.match(/(\{[\s\S]*\})/)
-    const raw = match ? (match[1] ?? match[0]) : trimmed
+    // Strip markdown code fences if present, otherwise use text as-is
+    const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+    const raw = fenceMatch ? fenceMatch[1].trim() : trimmed
 
     try {
       const parsed = JSON.parse(raw) as ImportedLesson
