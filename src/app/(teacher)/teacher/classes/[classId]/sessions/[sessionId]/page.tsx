@@ -40,7 +40,7 @@ export default async function TeacherDiaryPage({
     .select('student_id, question_id, answer_text, teacher_feedback, score')
     .eq('session_id', params.sessionId)
 
-  const questionIds = [...new Set((answers ?? []).map((a: { question_id: string }) => a.question_id))]
+  const questionIds = Array.from(new Set((answers ?? []).map((a: { question_id: string }) => a.question_id)))
   const { data: questions } = questionIds.length
     ? await admin.from('lesson_questions').select('id, question').in('id', questionIds)
     : { data: [] }

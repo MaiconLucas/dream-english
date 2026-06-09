@@ -39,7 +39,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
       .eq('session_id', params.sessionId)
 
     // Get question texts
-    const questionIds = [...new Set((answers ?? []).map((a: { question_id: string }) => a.question_id))]
+    const questionIds = Array.from(new Set((answers ?? []).map((a: { question_id: string }) => a.question_id)))
     const { data: questions } = questionIds.length
       ? await admin
           .from('lesson_questions')
