@@ -147,7 +147,7 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
 
     // Basic sanitization: BOM, CRLF, control chars — do NOT touch quotes
     const clean = raw
-      .replace(/^�/, ‘’)
+      .replace(/^\uFEFF/, ‘’)
       .replace(/\r\n/g, ‘\n’)
       .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ‘’)
 
