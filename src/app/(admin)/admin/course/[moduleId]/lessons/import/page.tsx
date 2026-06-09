@@ -48,6 +48,7 @@ Regras:
 - cefr_level deve ser um de: A1, A1/A2, A2, A2/B1, B1, B1/B2, B2, C1
 - Nos versos da música, substitua a palavra-lacuna por ___ e coloque a palavra correta em blank_word
 - Se uma seção não existir no texto, use null ou array vazio
+- IMPORTANTE: dentro de valores de string, NUNCA use aspas duplas ("). Use parênteses ou aspas simples para exemplos em inglês. Ex: (She is not funny) em vez de "She is not funny"
 - Responda SOMENTE com o JSON, sem markdown ou explicações
 
 TEXTO DA AULA:
@@ -56,6 +57,47 @@ TEXTO DA AULA:
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ImportedLesson = LessonPayload & { cefr_level: string; status: 'DRAFT' | 'PUBLISHED' }
+
+// Escapes unescaped interior " inside JSON string values so JSON.parse doesn't choke
+// on AI-generated JSON like: "explanation": "Não é "She not funny". É..."
+function fixUnescapedQuotes(s: string): string {
+  let out = ''
+  let inString = false
+  let i = 0
+  while (i < s.length) {
+    const c = s[i]
+    if (c === '\\' && inString) {
+      // already-escaped char — copy both chars unchanged
+      out += c + (s[i + 1] ?? '')
+      i += 2
+      continue
+    }
+    if (c === '"') {
+      if (!inString) {
+        inString = true
+        out += c
+      } else {
+        // Peek past whitespace to decide if this " closes the string
+        let j = i + 1
+        while (j < s.length && /[\t \r\n]/.test(s[j])) j++
+        const next = s[j]
+        const closesString = next === ',' || next === '}' || next === ']' || next === ':' || j >= s.length
+        if (closesString) {
+          inString = false
+          out += c
+        } else {
+          // Interior unescaped quote — escape it
+          out += '\\"'
+        }
+      }
+      i++
+      continue
+    }
+    out += c
+    i++
+  }
+  return out
+}
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -103,39 +145,44 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
     const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
     const raw = fenceMatch ? fenceMatch[1].trim() : trimmed
 
-    try {
-      const clean = raw
-        .replace(/^﻿/, '')                           // BOM
-        .replace(/\r\n/g, '\n')                           // CRLF
-        .replace(/[“”„‟]/g, '"')      // curly double quotes → straight
-        .replace(/[‘’‚‛]/g, "'")      // curly single quotes → straight
-        .replace(/[​‌‍⁠﻿]/g, '') // zero-width chars
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // control chars (keep \t \n)
-      const parsed = JSON.parse(clean) as ImportedLesson
-      if (!parsed.title) { setParseError('JSON inválido: campo "title" não encontrado.'); return }
-      parsed.status = 'DRAFT'
-      // Normalise arrays that AI might leave as null
+    // Basic sanitization: BOM, CRLF, control chars — do NOT touch quotes
+    const clean = raw
+      .replace(/^﻿/, ‘’)
+      .replace(/\r\n/g, ‘\n’)
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ‘’)
+
+    function applyLesson(parsed: ImportedLesson) {
+      if (!parsed.title) { setParseError(‘JSON inválido: campo “title” não encontrado.’); return }
+      parsed.status = ‘DRAFT’
       parsed.objectives = parsed.objectives ?? []
       parsed.questions = parsed.questions ?? []
-      parsed.theory = parsed.theory ?? { explanation: '', rows: [] }
+      parsed.theory = parsed.theory ?? { explanation: ‘’, rows: [] }
       parsed.theory.rows = parsed.theory.rows ?? []
       parsed.theory.headers = parsed.theory.headers ?? []
-      parsed.activity = parsed.activity ?? { type: 'game', title: '', duration_min: 15, instructions: '', examples: [] }
+      parsed.activity = parsed.activity ?? { type: ‘game’, title: ‘’, duration_min: 15, instructions: ‘’, examples: [] }
       parsed.activity.examples = parsed.activity.examples ?? []
-      parsed.song_exercise = parsed.song_exercise ?? { song_title: '', artist: '', verses: [], discussion_questions: [] }
+      parsed.song_exercise = parsed.song_exercise ?? { song_title: ‘’, artist: ‘’, verses: [], discussion_questions: [] }
       parsed.song_exercise.verses = parsed.song_exercise.verses ?? []
       parsed.song_exercise.discussion_questions = parsed.song_exercise.discussion_questions ?? []
       setLesson(parsed)
-    } catch (e) {
-      const msg = (e as Error).message
-      const posMatch = msg.match(/position (\d+)/)
-      if (posMatch) {
-        const pos = parseInt(posMatch[1])
-        const context = raw.slice(Math.max(0, pos - 20), pos + 20)
-        const charCode = raw.codePointAt(pos)
-        setParseError(`JSON inválido na posição ${pos}: ...${context}... (char U+${charCode?.toString(16).toUpperCase()})`)
-      } else {
-        setParseError(`JSON inválido: ${msg}`)
+    }
+
+    try {
+      applyLesson(JSON.parse(clean) as ImportedLesson)
+    } catch {
+      // First attempt failed — try auto-fixing unescaped interior quotes
+      try {
+        applyLesson(JSON.parse(fixUnescapedQuotes(clean)) as ImportedLesson)
+      } catch (e2) {
+        const msg = (e2 as Error).message
+        const posMatch = msg.match(/position (\d+)/)
+        if (posMatch) {
+          const pos = parseInt(posMatch[1])
+          const ctx = clean.slice(Math.max(0, pos - 30), pos + 30).replace(/\n/g, ‘ ‘)
+          setParseError(`JSON inválido na posição ${pos}: ...${ctx}...`)
+        } else {
+          setParseError(`JSON inválido: ${msg}`)
+        }
       }
     }
   }
