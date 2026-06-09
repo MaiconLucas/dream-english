@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft, Plus, Pencil, Clock, BookOpen } from 'lucide-react'
+import { ChevronLeft, Plus, Pencil, Clock, BookOpen, Sparkles } from 'lucide-react'
 import { CEFR_COLORS } from '../constants'
 import { DeleteModuleButton, DeleteLessonButton } from '../DeleteButtons'
 
@@ -85,13 +85,22 @@ export default async function CourseModulePage({ params }: { params: { moduleId:
         <h2 className="text-sm font-semibold text-[#0f172a]">
           Aulas <span className="text-[#94a3b8] font-normal">({(lessons ?? []).length})</span>
         </h2>
-        <Link
-          href={`/admin/course/${mod.id}/lessons/new`}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a56db] text-white text-xs font-medium rounded-lg hover:bg-[#1648c0] transition"
-        >
-          <Plus size={13} />
-          Nova Aula
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/admin/course/${mod.id}/lessons/import`}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#1a56db] border border-[#1a56db] rounded-lg hover:bg-[#ebf3ff] transition"
+          >
+            <Sparkles size={13} />
+            Importar Aula
+          </Link>
+          <Link
+            href={`/admin/course/${mod.id}/lessons/new`}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a56db] text-white text-xs font-medium rounded-lg hover:bg-[#1648c0] transition"
+          >
+            <Plus size={13} />
+            Nova Aula
+          </Link>
+        </div>
       </div>
 
       {(!lessons || lessons.length === 0) ? (
