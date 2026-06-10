@@ -58,6 +58,30 @@ TEXTO DA AULA:
 
 type ImportedLesson = LessonPayload & { cefr_level: string; status: 'DRAFT' | 'PUBLISHED' }
 
+// Iteratively escapes the unescaped " nearest to the reported error position,
+// then retries jsonrepair — handles AI output with interior unescaped quotes.
+function robustRepair(raw: string): string {
+  let text = raw
+  for (let attempt = 0; attempt < 30; attempt++) {
+    try {
+      return jsonrepair(text)
+    } catch (err) {
+      const msg = (err as Error).message
+      const posMatch = msg.match(/position (\d+)/i)
+      if (!posMatch) throw err
+      // Walk back from the error position to find the last unescaped "
+      let pos = parseInt(posMatch[1])
+      while (pos >= 0) {
+        if (text[pos] === '"' && (pos === 0 || text[pos - 1] !== '\\')) break
+        pos--
+      }
+      if (pos < 0) throw err
+      text = text.slice(0, pos) + '\\"' + text.slice(pos + 1)
+    }
+  }
+  throw new Error('Nao foi possivel reparar o JSON automaticamente.')
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -105,9 +129,8 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
     const raw = fenceMatch ? fenceMatch[1].trim() : trimmed
 
     try {
-      // jsonrepair handles: unescaped quotes, curly quotes, trailing commas,
-      // missing quotes on keys, and many other AI-generated JSON issues
-      const repaired = jsonrepair(raw)
+      // robustRepair wraps jsonrepair with iterative escaping of interior quotes
+      const repaired = robustRepair(raw)
       const parsed = JSON.parse(repaired) as ImportedLesson
       if (!parsed.title) { setParseError('JSON invalido: campo "title" nao encontrado.'); return }
       parsed.status = 'DRAFT'
