@@ -114,7 +114,7 @@ export default async function CourseModulePage({ params }: { params: { moduleId:
             {(lessons as Lesson[]).map(lesson => (
                 <div key={lesson.id} className="flex items-center gap-4 px-5 py-4">
                   <div className="w-7 h-7 rounded-full bg-[#f1f5f9] flex items-center justify-center flex-shrink-0 text-xs font-semibold text-[#64748b]">
-                    {lesson.order_index + 1}
+                    {lesson.order_index}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

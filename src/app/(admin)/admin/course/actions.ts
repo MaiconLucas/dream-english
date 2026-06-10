@@ -122,7 +122,7 @@ export async function createCourseLesson(moduleId: string, payload: LessonPayloa
       .from('course_lessons')
       .select('id', { count: 'exact', head: true })
       .eq('module_id', moduleId)
-    const nextIndex = count ?? 0
+    const nextIndex = (count ?? 0) + 1
     const { data: lesson, error } = await admin
       .from('course_lessons')
       .insert({ ...lessonData, module_id: moduleId, school_id: schoolId, order_index: nextIndex })
