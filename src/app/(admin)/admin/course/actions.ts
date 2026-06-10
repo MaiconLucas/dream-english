@@ -118,9 +118,14 @@ export async function createCourseLesson(moduleId: string, payload: LessonPayloa
   try {
     const { admin, schoolId } = await getContext()
     const { questions, ...lessonData } = payload
+    const { count } = await admin
+      .from('course_lessons')
+      .select('id', { count: 'exact', head: true })
+      .eq('module_id', moduleId)
+    const nextIndex = count ?? 0
     const { data: lesson, error } = await admin
       .from('course_lessons')
-      .insert({ ...lessonData, module_id: moduleId, school_id: schoolId })
+      .insert({ ...lessonData, module_id: moduleId, school_id: schoolId, order_index: nextIndex })
       .select('id')
       .single()
     if (error || !lesson) return { error: error?.message ?? 'Erro ao criar lição' }
