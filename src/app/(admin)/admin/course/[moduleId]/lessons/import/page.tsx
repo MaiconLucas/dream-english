@@ -191,13 +191,24 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
     if (!lesson) return
     setSaving(true)
     setSaveError('')
-    const result = await createCourseLesson(params.moduleId, lesson)
-    setSaving(false)
-    if ('error' in result && result.error) { setSaveError(result.error); return }
-    if ('id' in result && result.id) {
-      router.push(`/admin/course/${params.moduleId}/lessons/${result.id}/edit`)
-    } else {
-      router.push(`/admin/course/${params.moduleId}`)
+    try {
+      const result = await createCourseLesson(params.moduleId, lesson)
+      setSaving(false)
+      if ('error' in result && result.error) {
+        console.error('[import] createCourseLesson error:', result.error)
+        setSaveError(result.error)
+        return
+      }
+      if ('id' in result && result.id) {
+        router.push(`/admin/course/${params.moduleId}/lessons/${result.id}/edit`)
+      } else {
+        console.error('[import] unexpected result:', result)
+        setSaveError('Resposta inesperada do servidor. Tente novamente.')
+      }
+    } catch (err) {
+      setSaving(false)
+      console.error('[import] unhandled error:', err)
+      setSaveError((err as Error).message ?? 'Erro inesperado ao criar aula.')
     }
   }
 
@@ -274,6 +285,12 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
       {/* Preview */}
       {lesson && (
         <div className="space-y-4">
+          {saveError && (
+            <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <AlertCircle size={16} className="text-[#ef4444] flex-shrink-0" />
+              <p className="text-sm font-medium text-[#ef4444]">{saveError}</p>
+            </div>
+          )}
           <div className="flex items-center gap-2 p-4 bg-[#ecfdf5] border border-[#bbf7d0] rounded-xl">
             <CheckCircle size={16} className="text-[#10b981] flex-shrink-0" />
             <p className="text-sm font-medium text-[#065f46]">JSON válido! Revise abaixo e crie a aula como rascunho.</p>
@@ -381,13 +398,6 @@ export default function ImportLessonPage({ params }: { params: { moduleId: strin
             <Section title="Homework">
               <p className="text-sm text-[#374151] whitespace-pre-wrap">{lesson.homework_text}</p>
             </Section>
-          )}
-
-          {saveError && (
-            <div className="flex items-center gap-2 text-sm text-[#ef4444] bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-              <AlertCircle size={14} />
-              {saveError}
-            </div>
           )}
 
           <div className="flex gap-3 pt-1">
