@@ -125,14 +125,15 @@ export async function createStudent(
 // ─── update ─────────────────────────────────────────────────────────────────
 
 const updateSchema = z.object({
-  fullName:        z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  phone:           z.string(),
-  classId:         z.string(),
-  level:           z.string(),
-  active:          z.boolean(),
-  monthlyFeeCents: z.number().int().min(0),
-  discountPercent: z.number().min(0).max(100),
-  firstDueDate:    z.string(),
+  fullName:         z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  phone:            z.string(),
+  classId:          z.string(),
+  level:            z.string(),
+  active:           z.boolean(),
+  enrollmentActive: z.boolean(),
+  monthlyFeeCents:  z.number().int().min(0),
+  discountPercent:  z.number().min(0).max(100),
+  firstDueDate:     z.string(),
 })
 
 export type UpdateStudentInput = z.infer<typeof updateSchema>
@@ -146,7 +147,7 @@ export async function updateStudent(
   const parsed = updateSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
 
-  const { fullName, phone, classId, level, active,
+  const { fullName, phone, classId, level, active, enrollmentActive,
           monthlyFeeCents, discountPercent, firstDueDate } = parsed.data
   const admin = createAdminClient()
 
@@ -178,13 +179,27 @@ export async function updateStudent(
       .neq('class_id', cid)
 
     await admin.from('enrollments').upsert(
-      { school_id: schoolId, student_id: studentId, class_id: cid, status: 'ACTIVE' },
+      { school_id: schoolId, student_id: studentId, class_id: cid, status: enrollmentActive ? 'ACTIVE' : 'INACTIVE' },
       { onConflict: 'student_id,class_id' }
     )
   }
 
   revalidatePath('/admin/students')
   revalidatePath(`/admin/students/${studentId}`)
+  return { error: null }
+}
+
+// ─── change password ────────────────────────────────────────────────────────
+
+export async function changeStudentPassword(
+  profileId: string,
+  password: string,
+): Promise<{ error: string | null }> {
+  if (password.length < 6) return { error: 'Senha deve ter pelo menos 6 caracteres.' }
+
+  const admin = createAdminClient()
+  const { error } = await admin.auth.admin.updateUserById(profileId, { password })
+  if (error) return { error: error.message }
   return { error: null }
 }
 

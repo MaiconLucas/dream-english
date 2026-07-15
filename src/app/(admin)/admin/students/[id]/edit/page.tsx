@@ -64,14 +64,15 @@ export default async function EditStudentPage({ params }: { params: { id: string
         schoolId={myProfile.school_id}
         classes={classes ?? []}
         defaults={{
-          fullName:        profile?.full_name ?? '',
-          phone:           profile?.phone ?? '',
-          classId:         activeEnrollment?.class_id ?? '',
-          level:           student.level ?? '',
-          active:          profile?.active ?? true,
-          monthlyFee:      ((student.monthly_fee_cents as number) ?? 0) / 100,
-          discountPercent: (student.discount_percent as number) ?? 0,
-          firstDueDate:    (student.first_due_date as string) ?? '',
+          fullName:         profile?.full_name ?? '',
+          phone:            profile?.phone ?? '',
+          classId:          activeEnrollment?.class_id ?? '',
+          level:            student.level ?? '',
+          active:           profile?.active ?? true,
+          enrollmentActive: activeEnrollment?.status === 'ACTIVE',
+          monthlyFee:       ((student.monthly_fee_cents as number) ?? 0) / 100,
+          discountPercent:  (student.discount_percent as number) ?? 0,
+          firstDueDate:     (student.first_due_date as string) ?? '',
         }}
       />
     </div>
