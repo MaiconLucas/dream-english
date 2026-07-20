@@ -69,12 +69,11 @@ export default async function ModulePage({ params }: { params: { moduleId: strin
 
   const classIds = (enrollments ?? []).map((e: { class_id: string }) => e.class_id)
 
-  // Get published sessions for student's classes
+  // A sessão já libera a entrada durante a aula; a publicação libera o conteúdo pós-aula.
   const { data: publishedSessions } = classIds.length && lessonIds.length
     ? await admin
         .from('class_sessions')
         .select('lesson_id')
-        .eq('status', 'published')
         .in('class_id', classIds)
         .in('lesson_id', lessonIds)
     : { data: [] }

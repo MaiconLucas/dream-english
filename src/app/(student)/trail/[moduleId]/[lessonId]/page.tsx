@@ -6,6 +6,7 @@ import { ChevronLeft, Clock } from 'lucide-react'
 import type { CourseLesson, LessonQuestion, SongExercise } from '@/types/course'
 import SongExerciseComponent from './SongExercise'
 import CompleteButton from './CompleteButton'
+import StudentConversationAnswers from './StudentConversationAnswers'
 
 const CEFR_COLORS: Record<string, string> = {
   'A1':    'bg-emerald-50 text-emerald-700',
@@ -69,7 +70,7 @@ export default async function LessonPage({
         .maybeSingle()
     : { data: null }
 
-  // Find published session for student's enrolled class
+  // Find the class session, including a draft session currently being conducted.
   const { data: enrollments } = student
     ? await admin
         .from('enrollments')
@@ -83,9 +84,8 @@ export default async function LessonPage({
   const { data: publishedSession } = classIds.length
     ? await admin
         .from('class_sessions')
-        .select('id')
+        .select('id, status')
         .eq('lesson_id', params.lessonId)
-        .eq('status', 'published')
         .in('class_id', classIds)
         .maybeSingle()
     : { data: null }
@@ -135,6 +135,8 @@ export default async function LessonPage({
   }
   const song = (l.song_exercise ?? {}) as SongExercise
   const isCompleted = progress?.completed ?? false
+  const initialAnswerMap: Record<string, string> = {}
+  for (const answer of studentAnswers ?? []) initialAnswerMap[answer.question_id] = answer.answer_text ?? ''
 
   return (
     <div className="max-w-2xl">
@@ -251,8 +253,10 @@ export default async function LessonPage({
         </Card>
       )}
 
-      {/* Conversation questions */}
-      {qs.length > 0 && (
+      {/* Conversation questions: answer live or finish later with homework */}
+      {qs.length > 0 && sessionId ? (
+        <StudentConversationAnswers sessionId={sessionId} questions={qs} initialAnswers={initialAnswerMap} isLive={publishedSession?.status !== 'published'} />
+      ) : qs.length > 0 && (
         <Card>
           <h2 className="text-sm font-semibold text-[#0f172a] mb-4">💬 Perguntas de Conversação</h2>
           <div className="space-y-4">

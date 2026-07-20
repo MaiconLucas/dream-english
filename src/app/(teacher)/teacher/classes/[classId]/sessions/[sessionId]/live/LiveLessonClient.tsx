@@ -1,11 +1,20 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Check, ChevronLeft, ChevronRight, Loader2, Mic2, Save } from 'lucide-react'
+import { BookOpen, Check, ChevronLeft, ChevronRight, Loader2, Mic2, Save } from 'lucide-react'
 
 type Answer = { question_id: string; question_text: string; answer_text: string; teacher_feedback: string; score: number | null }
 type Student = { student_id: string; name: string; attended: boolean; performance_note: string; answers: Answer[] }
-type Data = { session: { summary: string; meet_chat: string; lesson: { title: string; grammar_focus?: string } }; students: Student[] }
+type LessonContent = {
+  title: string
+  grammar_focus?: string
+  objectives?: string[]
+  theory?: { explanation?: string; tip?: string; headers?: string[]; rows?: { col1: string; col2: string; col3?: string }[] }
+  activity?: { title?: string; instructions?: string; examples?: string[] }
+  song_exercise?: { song_title?: string; artist?: string; verses?: { text: string }[]; discussion_questions?: string[] }
+  homework_text?: string
+}
+type Data = { session: { summary: string; meet_chat: string; lesson: LessonContent }; students: Student[] }
 
 export default function LiveLessonClient({ sessionId }: { sessionId: string }) {
   const [data, setData] = useState<Data | null>(null)
@@ -13,6 +22,7 @@ export default function LiveLessonClient({ sessionId }: { sessionId: string }) {
   const [studentId, setStudentId] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [phase, setPhase] = useState<'content' | 'questions'>('content')
 
   useEffect(() => { fetch(`/api/sessions/${sessionId}`).then(r => r.json()).then(d => {
     const normalized = { ...d, students: (d.students ?? []).map((s: Student) => ({ ...s, answers: s.answers.map(a => ({ ...a, answer_text: a.answer_text ?? '', teacher_feedback: a.teacher_feedback ?? '' })) })) }
@@ -37,11 +47,24 @@ export default function LiveLessonClient({ sessionId }: { sessionId: string }) {
   }
 
   if (!data) return <div className="h-[70vh] flex items-center justify-center"><Loader2 className="animate-spin text-violet-300" /></div>
-  if (!questions.length) return <div className="p-12 text-center text-slate-300">Esta aula não possui perguntas de conversação.</div>
+  const lesson = data.session.lesson
+  if (phase === 'content') return <main className="max-w-6xl mx-auto px-5 py-7">
+    <div className="mb-7"><p className="text-sm text-violet-300">{lesson.grammar_focus}</p><h1 className="text-2xl font-bold">{lesson.title}</h1></div>
+    <div className="grid lg:grid-cols-2 gap-4">
+      {!!lesson.objectives?.length && <ContentCard title="Objetivos"><ul className="space-y-2">{lesson.objectives.map(item => <li key={item} className="text-lg">• {item}</li>)}</ul></ContentCard>}
+      {lesson.theory?.explanation && <ContentCard title="Teoria"><p className="text-lg whitespace-pre-wrap leading-relaxed">{lesson.theory.explanation}</p>{lesson.theory.tip && <p className="mt-4 rounded-xl bg-amber-400/15 border border-amber-300/20 p-3 text-amber-100">💡 {lesson.theory.tip}</p>}</ContentCard>}
+      {!!lesson.theory?.rows?.length && <ContentCard title="Exemplos"><div className="overflow-x-auto"><table className="w-full text-left"><thead>{lesson.theory.headers?.length ? <tr>{lesson.theory.headers.map(h => <th key={h} className="pb-2 pr-4 text-violet-300">{h}</th>)}</tr> : null}</thead><tbody>{lesson.theory.rows.map((row, i) => <tr key={i} className="border-t border-white/10"><td className="py-2 pr-4">{row.col1}</td><td className="py-2 pr-4">{row.col2}</td>{row.col3 && <td className="py-2">{row.col3}</td>}</tr>)}</tbody></table></div></ContentCard>}
+      {lesson.activity?.title && <ContentCard title="Atividade"><p className="text-xl font-semibold">{lesson.activity.title}</p><p className="mt-3 text-slate-300 whitespace-pre-wrap">{lesson.activity.instructions}</p>{lesson.activity.examples?.map(item => <p key={item} className="mt-2 text-violet-200">• {item}</p>)}</ContentCard>}
+      {lesson.song_exercise?.song_title && <ContentCard title="Música"><p className="text-xl font-semibold">{lesson.song_exercise.song_title} — {lesson.song_exercise.artist}</p>{lesson.song_exercise.verses?.map((verse, i) => <p key={i} className="mt-2 text-slate-300">{verse.text}</p>)}</ContentCard>}
+    </div>
+    <div className="flex justify-end mt-6"><button onClick={() => setPhase('questions')} className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 rounded-xl px-6 py-3 font-semibold">{questions.length ? <Mic2 size={18} /> : <BookOpen size={18} />}{questions.length ? `Começar conversa (${questions.length})` : 'Concluir apresentação'}<ChevronRight size={18} /></button></div>
+  </main>
+
+  if (!questions.length) return <div className="p-12 text-center text-slate-300">Conteúdo apresentado. Esta aula não possui perguntas de conversação; as atividades permanecem disponíveis ao aluno junto do homework.</div>
 
   return <main className="max-w-6xl mx-auto px-5 py-7">
     <div className="flex items-center justify-between gap-4 mb-7">
-      <div><p className="text-sm text-violet-300">{data.session.lesson.grammar_focus}</p><h1 className="text-xl font-bold">{data.session.lesson.title}</h1></div>
+      <div><button onClick={() => setPhase('content')} className="text-sm text-violet-300 hover:text-violet-200">← Rever teoria</button><h1 className="text-xl font-bold">{lesson.title}</h1></div>
       <div className="text-sm text-slate-400">Pergunta {questionIndex + 1} de {questions.length}</div>
     </div>
 
@@ -68,4 +91,8 @@ export default function LiveLessonClient({ sessionId }: { sessionId: string }) {
       </section>
     </div>
   </main>
+}
+
+function ContentCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return <section className="bg-white/5 border border-white/10 rounded-2xl p-6"><h2 className="text-xs font-bold tracking-widest text-violet-300 mb-4">{title.toUpperCase()}</h2>{children}</section>
 }
