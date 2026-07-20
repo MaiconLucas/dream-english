@@ -111,7 +111,7 @@ export default async function TeacherClassesPage() {
                           className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1a56db] hover:underline"
                         >
                           <GraduationCap size={13} />
-                          Diário
+                          Aulas
                         </Link>
                         <Link
                           href={`/teacher/classes/${cls.id}/attendance`}

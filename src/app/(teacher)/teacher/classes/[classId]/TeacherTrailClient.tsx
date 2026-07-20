@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpen, Clock, FileText, CheckCircle, Loader2, Search, Play } from 'lucide-react'
+import { BookOpen, Clock, FileText, CheckCircle, Loader2, Search, Play, LockKeyhole } from 'lucide-react'
 
 type Lesson = {
   id: string
@@ -132,12 +132,25 @@ export default function TeacherTrailClient({
             </div>
             {lesson.review_note && <p className="mx-5 mb-3 text-xs text-amber-800 bg-amber-50 rounded-lg px-3 py-2">{lesson.review_note}</p>}
             <div className="flex justify-end gap-2 px-5 py-3 border-t border-[#f1f5f9] bg-[#f8fafc]">
-              <button onClick={() => router.push(`/teacher/classes/${classId}/lessons/${lesson.id}/review`)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-[#e2e8f0] bg-white rounded-lg hover:border-[#1a56db]">
+              <button
+                onClick={() => router.push(`/teacher/classes/${classId}/lessons/${lesson.id}/review`)}
+                className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold rounded-lg transition ${
+                  lesson.review_status === 'APPROVED'
+                    ? 'border border-[#e2e8f0] bg-white text-[#475569] hover:border-[#1a56db] hover:text-[#1a56db]'
+                    : 'bg-[#1a56db] text-white shadow-sm hover:bg-[#1648c0]'
+                }`}
+              >
                 <Search size={13} /> Revisar conteúdo
               </button>
-              <button onClick={() => openLesson(lesson.id)} disabled={isLoading || lesson.review_status !== 'APPROVED'} title={lesson.review_status !== 'APPROVED' ? 'Aprove o conteúdo antes de iniciar' : undefined} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-[#1a56db] rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
-                {isLoading ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} {session ? 'Abrir aula' : 'Iniciar aula'}
-              </button>
+              {lesson.review_status === 'APPROVED' ? (
+                <button onClick={() => openLesson(lesson.id)} disabled={isLoading} className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg disabled:opacity-50">
+                  {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} {session ? 'Abrir aula' : 'Iniciar aula'}
+                </button>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-[#94a3b8] bg-[#f1f5f9] border border-[#e2e8f0] rounded-lg cursor-not-allowed" title="Revise e aprove o conteúdo primeiro">
+                  <LockKeyhole size={14} /> Aula bloqueada
+                </span>
+              )}
             </div>
           </div>
         )
