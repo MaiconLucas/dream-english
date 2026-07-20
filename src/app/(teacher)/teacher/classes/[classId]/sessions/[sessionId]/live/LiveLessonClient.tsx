@@ -23,6 +23,7 @@ export default function LiveLessonClient({ sessionId }: { sessionId: string }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [phase, setPhase] = useState<'content' | 'questions'>('content')
+  const [contentIndex, setContentIndex] = useState(0)
 
   useEffect(() => { fetch(`/api/sessions/${sessionId}`).then(r => r.json()).then(d => {
     const normalized = { ...d, students: (d.students ?? []).map((s: Student) => ({ ...s, answers: s.answers.map(a => ({ ...a, answer_text: a.answer_text ?? '', teacher_feedback: a.teacher_feedback ?? '' })) })) }
@@ -48,17 +49,26 @@ export default function LiveLessonClient({ sessionId }: { sessionId: string }) {
 
   if (!data) return <div className="h-[70vh] flex items-center justify-center"><Loader2 className="animate-spin text-violet-300" /></div>
   const lesson = data.session.lesson
-  if (phase === 'content') return <main className="max-w-6xl mx-auto px-5 py-7">
-    <div className="mb-7"><p className="text-sm text-violet-300">{lesson.grammar_focus}</p><h1 className="text-2xl font-bold">{lesson.title}</h1></div>
-    <div className="grid lg:grid-cols-2 gap-4">
-      {!!lesson.objectives?.length && <ContentCard title="Objetivos"><ul className="space-y-2">{lesson.objectives.map(item => <li key={item} className="text-lg">• {item}</li>)}</ul></ContentCard>}
-      {lesson.theory?.explanation && <ContentCard title="Teoria"><p className="text-lg whitespace-pre-wrap leading-relaxed">{lesson.theory.explanation}</p>{lesson.theory.tip && <p className="mt-4 rounded-xl bg-amber-400/15 border border-amber-300/20 p-3 text-amber-100">💡 {lesson.theory.tip}</p>}</ContentCard>}
-      {!!lesson.theory?.rows?.length && <ContentCard title="Exemplos"><div className="overflow-x-auto"><table className="w-full text-left"><thead>{lesson.theory.headers?.length ? <tr>{lesson.theory.headers.map(h => <th key={h} className="pb-2 pr-4 text-violet-300">{h}</th>)}</tr> : null}</thead><tbody>{lesson.theory.rows.map((row, i) => <tr key={i} className="border-t border-white/10"><td className="py-2 pr-4">{row.col1}</td><td className="py-2 pr-4">{row.col2}</td>{row.col3 && <td className="py-2">{row.col3}</td>}</tr>)}</tbody></table></div></ContentCard>}
-      {lesson.activity?.title && <ContentCard title="Atividade"><p className="text-xl font-semibold">{lesson.activity.title}</p><p className="mt-3 text-slate-300 whitespace-pre-wrap">{lesson.activity.instructions}</p>{lesson.activity.examples?.map(item => <p key={item} className="mt-2 text-violet-200">• {item}</p>)}</ContentCard>}
-      {lesson.song_exercise?.song_title && <ContentCard title="Música"><p className="text-xl font-semibold">{lesson.song_exercise.song_title} — {lesson.song_exercise.artist}</p>{lesson.song_exercise.verses?.map((verse, i) => <p key={i} className="mt-2 text-slate-300">{verse.text}</p>)}</ContentCard>}
-    </div>
-    <div className="flex justify-end mt-6"><button onClick={() => setPhase('questions')} className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 rounded-xl px-6 py-3 font-semibold">{questions.length ? <Mic2 size={18} /> : <BookOpen size={18} />}{questions.length ? `Começar conversa (${questions.length})` : 'Concluir apresentação'}<ChevronRight size={18} /></button></div>
-  </main>
+  const contentSlides: { title: string; content: React.ReactNode }[] = []
+  if (lesson.objectives?.length) contentSlides.push({ title: 'Objetivos', content: <ul className="space-y-4">{lesson.objectives.map(item => <li key={item} className="text-2xl md:text-3xl leading-relaxed">• {item}</li>)}</ul> })
+  if (lesson.theory?.explanation) contentSlides.push({ title: 'Teoria', content: <><p className="text-xl md:text-2xl whitespace-pre-wrap leading-relaxed">{lesson.theory.explanation}</p>{lesson.theory.tip && <p className="mt-6 rounded-xl bg-amber-400/15 border border-amber-300/20 p-4 text-lg text-amber-100">💡 {lesson.theory.tip}</p>}</> })
+  if (lesson.theory?.rows?.length) contentSlides.push({ title: 'Exemplos', content: <div className="overflow-x-auto"><table className="w-full text-left text-xl"><thead>{lesson.theory.headers?.length ? <tr>{lesson.theory.headers.map(h => <th key={h} className="pb-4 pr-6 text-violet-300">{h}</th>)}</tr> : null}</thead><tbody>{lesson.theory.rows.map((row, i) => <tr key={i} className="border-t border-white/10"><td className="py-4 pr-6">{row.col1}</td><td className="py-4 pr-6">{row.col2}</td>{row.col3 && <td className="py-4">{row.col3}</td>}</tr>)}</tbody></table></div> })
+  if (lesson.activity?.title) contentSlides.push({ title: 'Atividade', content: <><p className="text-3xl font-semibold">{lesson.activity.title}</p><p className="mt-5 text-xl text-slate-300 whitespace-pre-wrap leading-relaxed">{lesson.activity.instructions}</p>{lesson.activity.examples?.map(item => <p key={item} className="mt-3 text-xl text-violet-200">• {item}</p>)}</> })
+  if (lesson.song_exercise?.song_title) contentSlides.push({ title: 'Música', content: <><p className="text-3xl font-semibold">{lesson.song_exercise.song_title} — {lesson.song_exercise.artist}</p><div className="mt-6 space-y-3">{lesson.song_exercise.verses?.map((verse, i) => <p key={i} className="text-xl text-slate-300">{verse.text}</p>)}</div></> })
+
+  if (phase === 'content') {
+    const slide = contentSlides[contentIndex]
+    const isLast = contentIndex >= contentSlides.length - 1
+    return <main className="max-w-6xl mx-auto px-5 py-6 flex flex-col min-h-[calc(100vh-57px)]">
+      <div className="flex items-start justify-between gap-4 mb-5"><div><p className="text-sm text-violet-300">{lesson.grammar_focus}</p><h1 className="text-2xl font-bold">{lesson.title}</h1></div><p className="text-sm text-slate-400">{contentSlides.length ? `${contentIndex + 1} de ${contentSlides.length}` : 'Apresentação'}</p></div>
+      {slide ? <ContentCard title={slide.title}>{slide.content}</ContentCard> : <ContentCard title="Aula"><p className="text-2xl">O conteúdo introdutório desta aula está pronto.</p></ContentCard>}
+      <div className="flex items-center justify-between gap-3 mt-5">
+        <button onClick={() => setContentIndex(i => Math.max(0, i - 1))} disabled={contentIndex === 0} className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-5 py-3 font-semibold disabled:opacity-30"><ChevronLeft size={18} /> Anterior</button>
+        <div className="hidden sm:flex gap-1.5">{contentSlides.map((item, index) => <button key={item.title} onClick={() => setContentIndex(index)} aria-label={`Ir para ${item.title}`} className={`h-2 rounded-full transition-all ${index === contentIndex ? 'w-8 bg-violet-400' : 'w-2 bg-white/20'}`} />)}</div>
+        {isLast ? <button onClick={() => setPhase('questions')} className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 rounded-xl px-6 py-3 font-semibold">{questions.length ? <Mic2 size={18} /> : <BookOpen size={18} />}{questions.length ? 'Começar conversa' : 'Concluir apresentação'}<ChevronRight size={18} /></button> : <button onClick={() => setContentIndex(i => Math.min(contentSlides.length - 1, i + 1))} className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 rounded-xl px-6 py-3 font-semibold">Próximo <ChevronRight size={18} /></button>}
+      </div>
+    </main>
+  }
 
   if (!questions.length) return <div className="p-12 text-center text-slate-300">Conteúdo apresentado. Esta aula não possui perguntas de conversação; as atividades permanecem disponíveis ao aluno junto do homework.</div>
 
@@ -94,5 +104,5 @@ export default function LiveLessonClient({ sessionId }: { sessionId: string }) {
 }
 
 function ContentCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="bg-white/5 border border-white/10 rounded-2xl p-6"><h2 className="text-xs font-bold tracking-widest text-violet-300 mb-4">{title.toUpperCase()}</h2>{children}</section>
+  return <section className="flex-1 bg-white/5 border border-white/10 rounded-3xl p-7 md:p-12 flex flex-col justify-center overflow-auto"><h2 className="text-sm font-bold tracking-widest text-violet-300 mb-7">{title.toUpperCase()}</h2>{children}</section>
 }
