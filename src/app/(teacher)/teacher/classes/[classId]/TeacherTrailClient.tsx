@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpen, Clock, FileText, CheckCircle, Loader2 } from 'lucide-react'
+import { BookOpen, Clock, FileText, CheckCircle, Loader2, Search, Play } from 'lucide-react'
 
 type Lesson = {
   id: string
@@ -10,6 +10,8 @@ type Lesson = {
   grammar_focus: string | null
   duration_min: number
   order_index: number
+  review_status?: 'PENDING_REVIEW' | 'CHANGES_REQUESTED' | 'APPROVED'
+  review_note?: string | null
 }
 
 type SessionInfo = { id: string; status: string }
@@ -94,11 +96,9 @@ export default function TeacherTrailClient({
         const isLoading = loadingId === lesson.id
 
         return (
-          <button
+          <div
             key={lesson.id}
-            onClick={() => openLesson(lesson.id)}
-            disabled={isLoading}
-            className="w-full text-left bg-white rounded-xl border border-[#e2e8f0] shadow-sm hover:border-[#1a56db] transition disabled:opacity-60 disabled:cursor-not-allowed overflow-hidden"
+            className="w-full bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden"
           >
             <div className="flex items-center gap-4 px-5 py-4">
               <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-[#ebf3ff]">
@@ -119,9 +119,27 @@ export default function TeacherTrailClient({
                 </span>
               </div>
 
-              {statusBadge(session)}
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {lesson.review_status === 'APPROVED' ? (
+                  <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">Aprovada</span>
+                ) : lesson.review_status === 'CHANGES_REQUESTED' ? (
+                  <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-full">Revisão solicitada</span>
+                ) : (
+                  <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded-full">Aguardando revisão</span>
+                )}
+                {statusBadge(session)}
+              </div>
             </div>
-          </button>
+            {lesson.review_note && <p className="mx-5 mb-3 text-xs text-amber-800 bg-amber-50 rounded-lg px-3 py-2">{lesson.review_note}</p>}
+            <div className="flex justify-end gap-2 px-5 py-3 border-t border-[#f1f5f9] bg-[#f8fafc]">
+              <button onClick={() => router.push(`/teacher/classes/${classId}/lessons/${lesson.id}/review`)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-[#e2e8f0] bg-white rounded-lg hover:border-[#1a56db]">
+                <Search size={13} /> Revisar conteúdo
+              </button>
+              <button onClick={() => openLesson(lesson.id)} disabled={isLoading || lesson.review_status !== 'APPROVED'} title={lesson.review_status !== 'APPROVED' ? 'Aprove o conteúdo antes de iniciar' : undefined} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-[#1a56db] rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
+                {isLoading ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} {session ? 'Abrir aula' : 'Iniciar aula'}
+              </button>
+            </div>
+          </div>
         )
       })}
     </div>

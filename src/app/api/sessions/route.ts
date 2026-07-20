@@ -24,6 +24,17 @@ export async function POST(request: NextRequest) {
 
     if (!teacher) return NextResponse.json({ error: 'Teacher not found' }, { status: 403 })
 
+    const [{ data: ownedClass }, { data: approvedLesson }] = await Promise.all([
+      admin.from('classes').select('id, module_id').eq('id', class_id).eq('teacher_id', teacher.id).single(),
+      admin.from('course_lessons').select('id, module_id, review_status').eq('id', lesson_id).eq('school_id', teacher.school_id).single(),
+    ])
+    if (!ownedClass || !approvedLesson || ownedClass.module_id !== approvedLesson.module_id) {
+      return NextResponse.json({ error: 'Aula não pertence a esta turma' }, { status: 403 })
+    }
+    if (approvedLesson.review_status !== 'APPROVED') {
+      return NextResponse.json({ error: 'O conteúdo precisa ser aprovado antes do início da aula' }, { status: 409 })
+    }
+
     // Return existing session if already created
     const { data: existing } = await admin
       .from('class_sessions')

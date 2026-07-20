@@ -3,6 +3,7 @@
 // ============================================================
 
 export type LessonStatus = 'DRAFT' | 'PUBLISHED'
+export type LessonReviewStatus = 'PENDING_REVIEW' | 'CHANGES_REQUESTED' | 'APPROVED'
 export type CefrLevel = 'A1' | 'A1/A2' | 'A2' | 'A2/B1' | 'B1' | 'B1/B2' | 'B2' | 'C1'
 
 // Linha da tabela de teoria gramatical
@@ -79,6 +80,10 @@ export interface CourseLesson {
   teacher_id?: string
   order_index: number
   status: LessonStatus
+  review_status: LessonReviewStatus
+  review_note?: string
+  reviewed_by?: string
+  reviewed_at?: string
   title: string
   grammar_focus?: string
   duration_min: number
@@ -100,6 +105,7 @@ export interface CourseLessonSummary {
   module_id: string
   order_index: number
   status: LessonStatus
+  review_status?: LessonReviewStatus
   title: string
   grammar_focus?: string
   duration_min: number

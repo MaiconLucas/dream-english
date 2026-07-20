@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ChevronDown, ChevronUp, Save, Send, CheckCircle, Clock } from 'lucide-react'
+import { ChevronDown, ChevronUp, Save, Send, CheckCircle, Clock, Presentation } from 'lucide-react'
+import Link from 'next/link'
 
 type Answer = {
   question_id: string
@@ -37,6 +38,7 @@ type SessionData = {
 
 type Props = {
   sessionId: string
+  liveHref: string
   initialData: {
     session: SessionData
     students: StudentRecord[]
@@ -47,7 +49,7 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
-export default function DiaryClient({ sessionId, initialData }: Props) {
+export default function DiaryClient({ sessionId, liveHref, initialData }: Props) {
   const published = initialData.session.status === 'published'
   const lesson = initialData.session.lesson
 
@@ -190,6 +192,7 @@ export default function DiaryClient({ sessionId, initialData }: Props) {
 
         {!isPublished && (
           <div className="flex items-center gap-2 flex-shrink-0">
+            <Link href={liveHref} className="inline-flex items-center gap-1.5 px-4 py-2 bg-violet-600 text-sm font-medium text-white rounded-lg hover:bg-violet-700 transition"><Presentation size={14} /> Modo Aula</Link>
             <button
               onClick={save}
               disabled={saving}

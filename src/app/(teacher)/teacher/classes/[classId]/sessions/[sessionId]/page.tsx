@@ -121,7 +121,7 @@ export default async function TeacherDiaryPage({
         Trilha da Turma
       </Link>
 
-      <DiaryClient sessionId={params.sessionId} initialData={initialData} />
+      <DiaryClient sessionId={params.sessionId} liveHref={`/teacher/classes/${params.classId}/sessions/${params.sessionId}/live`} initialData={initialData} />
     </div>
   )
 }

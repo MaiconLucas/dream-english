@@ -54,7 +54,7 @@ export default async function TeacherClassTrailPage({ params }: { params: { clas
 
   const { data: lessons } = await admin
     .from('course_lessons')
-    .select('id, title, grammar_focus, duration_min, order_index')
+    .select('id, title, grammar_focus, duration_min, order_index, review_status, review_note')
     .eq('module_id', moduleId)
     .eq('status', 'PUBLISHED')
     .order('order_index')

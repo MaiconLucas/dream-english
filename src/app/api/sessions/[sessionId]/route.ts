@@ -12,10 +12,14 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
     const admin = createAdminClient()
 
+    const { data: teacher } = await admin.from('teachers').select('id').eq('profile_id', user.id).single()
+    if (!teacher) return NextResponse.json({ error: 'Professor não encontrado' }, { status: 403 })
+
     const { data: session, error: sessionError } = await admin
       .from('class_sessions')
       .select('id, status, summary, meet_chat, conducted_at, lesson_id')
       .eq('id', params.sessionId)
+      .eq('teacher_id', teacher.id)
       .single()
 
     if (sessionError || !session) {
@@ -120,6 +124,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const admin = createAdminClient()
 
+    const { data: teacher } = await admin.from('teachers').select('id').eq('profile_id', user.id).single()
+    if (!teacher) return NextResponse.json({ error: 'Professor não encontrado' }, { status: 403 })
+
     const body = await request.json() as {
       summary: string
       meet_chat: string
@@ -138,8 +145,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const { data: session } = await admin
       .from('class_sessions')
-      .select('id, school_id, status')
+      .select('id, school_id, status, teacher_id')
       .eq('id', params.sessionId)
+      .eq('teacher_id', teacher.id)
       .single()
 
     if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 })

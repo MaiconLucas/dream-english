@@ -145,7 +145,13 @@ export async function updateCourseLesson(lessonId: string, moduleId: string, pay
   try {
     const { admin, schoolId } = await getContext()
     const { questions, ...lessonData } = payload
-    const { error } = await admin.from('course_lessons').update(lessonData).eq('id', lessonId)
+    const { error } = await admin.from('course_lessons').update({
+      ...lessonData,
+      review_status: 'PENDING_REVIEW',
+      review_note: null,
+      reviewed_by: null,
+      reviewed_at: null,
+    }).eq('id', lessonId)
     if (error) return { error: error.message }
     await admin.from('lesson_questions').delete().eq('lesson_id', lessonId)
     if (questions.length > 0) {
